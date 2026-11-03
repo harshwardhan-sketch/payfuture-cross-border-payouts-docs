@@ -6,7 +6,7 @@
 const GD = PAGES.guide;
 NAV.guide = [
   ['Start here', [['welcome', 'Welcome'], ['enterprise', 'What is Enterprise?'], ['find-your-product', 'Find your product']]],
-  ['Understand', [['how-payouts-work', 'How a payout works'], ['funding', 'Funding: USDT & fiat'], ['corridors', 'Corridors & limits'], ['glossary', 'Glossary']]],
+  ['Understand', [['remittance', 'Remittance'], ['how-payouts-work', 'How a payout works'],['funding', 'Funding: USDT & fiat'], ['corridors', 'Corridors & limits'], ['glossary', 'Glossary']]],
   ['Build', [['journey', 'Integration journey'], ['quickstart-ige', 'Quickstart: IGE payout'], ['quickstart-cbs', 'Quickstart: CBS payout'], ['playground', 'Signature playground']]],
   ['Go live', [['go-live', 'Test & go live'], ['checklist', 'Go-live checklist']]],
   ['Help', [['faq', 'FAQ'], ['support', 'Support']]],
@@ -155,6 +155,61 @@ INIT['find-your-product'] = () => {
 };
 
 /* ================= UNDERSTAND ================= */
+const ramp = nodes => `<div class="ramp">${nodes.map(([t, s], i) => `${i ? '<span class="ramp-arrow" aria-hidden="true">→</span>' : ''}<div class="ramp-node${s === 'hub' ? ' hub' : ''}"><b>${t}</b>${s && s !== 'hub' ? `<span>${s}</span>` : ''}</div>`).join('')}</div>`;
+GD.remittance = () => `<h1>Remittance: fund → convert → pay out</h1>
+<p class="lead">Remittance is the heart of Enterprise. You send PayFuture money once, in USDT or fiat. PayFuture turns it into local currency, and you pay out to individuals and businesses in India and Pakistan from that balance, payout by payout, through the API.</p>
+<div class="grid3">
+  <div class="tile"><span class="num">1</span><b>Fund</b><span>Top up your PayFuture balance in USDT, USD or EUR.</span></div>
+  <div class="tile"><span class="num">2</span><b>Convert</b><span>PayFuture off-ramps it into an INR or PKR balance.</span></div>
+  <div class="tile"><span class="num">3</span><b>Pay out</b><span>You call the payout API; the beneficiary's bank or wallet is credited.</span></div>
+</div>
+${tabs([
+  [`<img class="flag" src="${IMG('india.svg')}" alt=""> India`, `
+<h2>India: USDT, USD or EUR to INR</h2>
+${ramp([['USDT / USD / EUR', 'you fund'], ['Off-ramp', 'hub'], ['INR balance', 'held for you'], ['Beneficiary', 'bank account']])}
+<div class="grid2">
+  <div class="tile"><b>⏱ Fixed rate of the day</b><span>The FX rate is fixed for the day, so you know what each payout costs before you send it.</span></div>
+  <div class="tile"><b>⚡ 11 AM – 3 PM IST window</b><span>Fund or convert inside this window and it completes in 2–3 hours. ${TC}</span></div>
+</div>
+<h3>Step by step</h3>
+${steps([
+  ['Check the rate', `Check the rate of the day before you fund. ${TC}`],
+  ['Fund your account', 'In USDT (TRON / TRC-20), USD or EUR.'],
+  ['PayFuture off-ramps to INR', 'Your INR balance goes up at the rate of the day.'],
+  ['You initiate a payout', 'One API call per beneficiary, with their bank details.'],
+  ['The beneficiary is paid', 'Usually within 3–5 minutes over IMPS. A UTR (bank reference) comes back in the callback.'],
+])}
+${spec([
+  ['Who you can pay', 'Individuals and businesses: B2B, B2C, C2B, C2C'],
+  ['What the beneficiary sees', 'Customised descriptors are supported. The IMPS narrative varies by transaction; NEFT shows the sending bank\'s name.'],
+  ['Business payouts', 'Invoice and GST number required'],
+  ['Limits and speed', '<a href="#/guide/corridors">Corridors & limits →</a>'],
+])}`],
+  [`<img class="flag" src="${IMG('pakistan.svg')}" alt=""> Pakistan`, `
+<h2>Pakistan: USDT to PKR</h2>
+${ramp([['USDT', 'TRON / TRC-20'], ['Off-ramp via bank', 'hub'], ['PKR balance', 'held for you'], ['Beneficiary', 'bank or wallet']])}
+<div class="grid2">
+  <div class="tile"><b>🪙 USDT on TRC-20 only</b><span>Other networks or currencies need PayFuture Finance approval before onboarding.</span></div>
+  <div class="tile"><b>⚡ Same-day settlement</b><span>PKR is available 30–60 minutes after the bank receives your USDT, Monday to Saturday.</span></div>
+</div>
+<h3>Step by step</h3>
+${steps([
+  ['Prefund in USDT', 'Before 2:30 PM GST to PayFuture (the bank cut-off is 4:00 PM PKT / 3:00 PM GST).'],
+  ['The beneficiary is validated', 'The account title is checked first. No money moves yet.'],
+  ['The payout starts', 'Once validated, the amount is blocked on your balance and sent.'],
+  ['Final status by callback', 'You get the final status asynchronously; a status check is the fallback.'],
+])}
+${spec([
+  ['Pay out to', 'Bank accounts, Easypaisa and JazzCash wallets'],
+  ['Throughput', 'Up to 1,500 TPS'],
+  ['No liquidity on', 'Sundays'],
+  ['Limits and speed', '<a href="#/guide/corridors">Corridors & limits →</a>'],
+])}`],
+])}
+${callout(`<p><b>Still being confirmed.</b> PayFuture's sources give different INR timings (an 11 AM–3 PM IST conversion window, a 3:30 PM IST cut-off) and describe the INR rate both as a fixed rate of the day and as live interbank rates. Treat the times above as a guide and confirm yours at onboarding. ${TC}</p>`, 'warn')}
+<p>Next: <a href="#/guide/funding">how funding works</a> · <a href="#/guide/how-payouts-work">watch a payout travel</a> · <a href="#/guide/quickstart-ige">send your first payout</a></p>
+${src(['coverage.payfuture.net', COVERAGE])}`;
+
 GD['how-payouts-work'] = () => `<h1>How a payout works</h1>
 <p class="lead">A payout is asynchronous: your request is <b>accepted</b> in milliseconds, the money <b>arrives</b> seconds to days later. Press play and watch one travel.</p>
 <div class="sim" id="sim">
@@ -222,7 +277,7 @@ ${tabs([
     ['Products', `IGE ${LIVE} · CBS ${LIVE}`], ['Currency', 'INR'], ['Modes', 'B2B, B2C, C2B, C2C'], ['Channels', 'IMPS and NEFT'],
     ['IMPS', `Real time, 24x7 · INR 1,000 – 400,000 per payout ${TC}`], ['NEFT', 'Same day, about 45 minutes, banking hours · from INR 200,000, no maximum'],
     ['You send', 'Payout type, account number, account name, IFSC, bank name'], ['Business payouts', 'Invoice and GST number required'],
-    ['Proof of payment', 'UTR on every successful payout, sent in the callback'], ['FX', 'Live interbank-based rates, 24x7'],
+    ['Proof of payment', 'UTR on every successful payout, sent in the callback'], ['FX', `Rate of the day ${TC}`],
   ])],
   [`<img class="flag" src="${IMG('pakistan.svg')}" alt=""> Pakistan`, spec([
     ['Products', `IGE ${LIVE} · CBS ${TESTING}`], ['Currency', 'PKR'], ['Methods', 'Bank transfer, Easypaisa, JazzCash'], ['Funding', 'USDT on TRON (TRC-20)'],
