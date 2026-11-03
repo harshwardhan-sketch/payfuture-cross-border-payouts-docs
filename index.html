@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PayFuture Enterprise Developer Docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Roboto:wght@400;500&display=swap">
+<link rel="icon" href="assets/logo.svg">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="enterprise.css">
+</head>
+<body>
+<div class="draft">Draft for internal review. Items marked <span class="tc">TO CONFIRM</span> are not yet confirmed by PayFuture and must be resolved before merchants see this site.</div>
+<header>
+  <button class="iconbtn" id="menuBtn" aria-label="Menu">☰</button>
+  <a class="logo" href="#/" aria-label="PayFuture Enterprise Developer Docs home"><img src="assets/logo.svg" alt="PayFuture"><small>Enterprise Developers</small></a>
+  <div class="switch" id="switch">
+    <a href="#/about/who-we-are" data-tab="about">About PayFuture</a>
+    <a href="#/guide/welcome" data-tab="guide">Enterprise guide</a>
+    <a href="#/ige/start" data-tab="api">API reference</a>
+  </div>
+  <div class="spacer"></div>
+  <button class="iconbtn" id="themeBtn" aria-label="Toggle theme">◐ Theme</button>
+</header>
+<div id="app"></div>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="about.js"></script>
+<script src="guide.js"></script>
+<script src="pages.js"></script>
+</body>
+</html>
