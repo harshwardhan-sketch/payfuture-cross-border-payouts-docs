@@ -1,11 +1,10 @@
 /* PayFuture Enterprise developer docs — renderer and router.
-   Three sections: #/overview/…, #/ige/… (Enterprise on IGE) and #/cbs/… (CBS / Core Banking).
-   Page content lives in pages.js; error-code data in data.js. Build-free: open index.html directly. */
+   Sections: #/about/… (the company), #/guide/… (the Enterprise guide: Collections and Payouts) and #/api/… (the Enterprise API reference).
+   Page content lives in about.js, guide.js and pages.js; error-code data in data.js. Build-free: open index.html directly.
+   Only Live features are shown. Unconfirmed values carry TO CONFIRM (see REVIEW.md). */
 
 const TC = '<span class="tc">TO CONFIRM</span>';
 const LIVE = '<span class="st live">Live</span>';
-const TESTING = '<span class="st testing">Testing</span>';
-const PLANNED = '<span class="st planned">Planned</span>';
 
 /* ---------- helpers ---------- */
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -32,20 +31,17 @@ const ep = (m, p) => `<div class="endpoint"><span class="method ${m.toLowerCase(
 const callout = (html, kind = '') => `<div class="callout ${kind}">${html}</div>`;
 const steps = items => `<ol class="steps">${items.map(([b, t]) => `<li><b>${b}</b>${t}</li>`).join('')}</ol>`;
 const src = (...links) => `<p class="src">Source: ${links.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join(' · ')}</p>`;
-const IGE_DOCS = 'https://document.payfuture.net';
-const CBS_DOCS = 'https://docs.payfuturefs.com/?api=gateway';
-const AUTH_DOCS = 'https://docs.payfuturefs.com/?api=auth';
+const API_DOCS = 'https://document.payfuture.net';
 const COVERAGE = 'https://coverage.payfuture.net';
 
 /* ---------- sections ---------- */
 const SECTIONS = {
   about: {label: 'About PayFuture', sub: 'Company & solutions', tab: 'about'},
   guide: {label: 'Enterprise guide', sub: 'Learn, build, go live', tab: 'guide'},
-  ige: {label: 'API reference · IGE', sub: 'Enterprise on IGE', tab: 'api'},
-  cbs: {label: 'API reference · CBS', sub: 'Core Banking API', tab: 'api'},
+  api: {label: 'API reference', sub: 'Enterprise API', tab: 'api'},
 };
-const PAGES = {about: {}, guide: {}, ige: {}, cbs: {}};
-const NAV = {about: [], guide: [], ige: [], cbs: []};
+const PAGES = {about: {}, guide: {}, api: {}};
+const NAV = {about: [], guide: [], api: []};
 /* per-page hooks for the interactive pages: INIT[pageId] runs after the page is drawn */
 const INIT = {};
 
@@ -71,7 +67,7 @@ function render() {
     layout.querySelectorAll('nav.side a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === `#/${sec}/${cur[0]}`));
   } else {
     app.innerHTML = `<div class="layout" data-sec="${sec}">
-      <nav class="side"><div class="side-product">${S.label} <small>${S.sub}</small></div>${S.tab === 'api' ? `<div class="api-switch"><a href="#/ige/start" class="${sec === 'ige' ? 'on' : ''}">IGE</a><a href="#/cbs/start" class="${sec === 'cbs' ? 'on' : ''}">CBS</a></div>` : ''}<input id="navFilter" placeholder="Filter pages…" aria-label="Filter pages">
+      <nav class="side"><div class="side-product">${S.label} <small>${S.sub}</small></div><input id="navFilter" placeholder="Filter pages…" aria-label="Filter pages">
         ${NAV[sec].map(([g, items]) => `<h4>${g}</h4>${items.map(([pid, t]) => `<a href="#/${sec}/${pid}" class="${pid === cur[0] ? 'on' : ''}">${t}</a>`).join('')}`).join('')}
       </nav><main>${main}</main></div>`;
   }

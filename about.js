@@ -14,8 +14,8 @@ const next = (href, label) => `<a class="next-cta" href="${href}">${label} <span
 const FLAGS_SITE = [['India', 'india.svg'], ['Pakistan', 'pakistan.svg'], ['Bangladesh', 'bangladesh.svg'], ['Sri Lanka', 'Sri-Lanka-flag-global-reach.svg'], ['Nepal', 'Nepal.svg'],
   ['Philippines', 'Philippines-1.png'], ['Malaysia', 'Malaysia.svg'], ['Egypt', 'egypt.svg'], ['Morocco', 'Morocco-global-reach-flag-1.svg'], ['Nigeria', 'Nigeria-flag.svg'],
   ['Kenya', 'kenya.svg'], ['South Africa', 'sf.svg'], ['Brazil', 'brazil.svg'], ['Argentina', 'argentina.svg'], ['Mexico', 'mexico.svg']];
-/* Enterprise payout corridors documented in this guide */
-const ENT_MARKETS = new Set(['India', 'Pakistan', 'Nigeria', 'Egypt']);
+/* Enterprise corridors (coverage.payfuture.net): Collections in India, Payouts to India and Pakistan */
+const ENT_MARKETS = new Set(['India', 'Pakistan']);
 const LOGOS = [['Ace Money Transfer', 'Ace-Money-Transfer.svg'], ['APA', 'APA.svg'], ['Faster Payments', 'Faster-Payments.svg'], ['Unigox', 'Unigox.svg'], ['Tamatem', 'Tamatem-1.svg'], ['Profee', 'Profee-1.svg'], ['Pagsmile', 'Pagsmile-1.svg']];
 const TEAM = [['Manpreet Haer', 'Co-Founder & Chief Executive Officer', 'Manpreet-haer.png'], ['Jon Bowman', 'Chief Technology Officer', 'Jon-Bowman.png'],
   ['Sid Gautam', 'Chief Revenue Officer', 'Sid-2.webp'], ['Saaly Temirkanov', 'Chief Operating Officer', 'Saaly.webp']];
@@ -64,7 +64,7 @@ A['what-we-do'] = () => `${banner('main-banner0002.webp', 'Reach billions in eme
 <h2>Two ways to work with PayFuture</h2>
 <div class="grid2">
   <div class="tile"><span class="tag">Gateway</span><b>PayFuture Gateway</b><span>Pay-ins and payouts for gaming, forex, P2P and e-commerce merchants. It has its own developer docs.</span></div>
-  <a class="tile hl" href="#/guide/enterprise"><span class="tag">This guide</span><b>PayFuture Enterprise →</b><span>Collections, remittances and payouts for businesses that move money across borders at scale: fund in USDT or fiat, convert FX, pay out locally.</span></a>
+  <a class="tile hl" href="#/guide/enterprise"><span class="tag">This guide</span><b>PayFuture Enterprise →</b><span>Two products for businesses that move money across borders at scale: Collections (pay-ins) and Payouts (remittance).</span></a>
 </div>
 <h2>The solutions behind Enterprise</h2>
 <div class="pf-cards">${SOLUTIONS.map(([id, t, d, img]) => `<a class="pf-card" href="#/about/${id}">${fig(img, t)}<div><b>${t} →</b><span>${d}</span></div></a>`).join('')}</div>
@@ -86,8 +86,8 @@ A.markets = () => `${banner('countries-banner.webp', 'Unlock opportunities in em
   <div class="tile"><b>Regulated</b><span>Compliant by design</span></div>
 </div>
 <h2>Our global reach</h2>
-<div class="pf-flags">${FLAGS_SITE.map(([n, f]) => `<div class="pf-flag">${fig(f, n)}<span>${n}</span>${ENT_MARKETS.has(n) ? '<em>Enterprise payouts</em>' : ''}</div>`).join('')}</div>
-<p class="src">“Enterprise payouts” marks the payout corridors documented in this guide. See <a href="#/guide/corridors">Corridors</a>.</p>
+<div class="pf-flags">${FLAGS_SITE.map(([n, f]) => `<div class="pf-flag">${fig(f, n)}<span>${n}</span>${ENT_MARKETS.has(n) ? '<em>Enterprise</em>' : ''}</div>`).join('')}</div>
+<p class="src">“Enterprise” marks the corridors where Enterprise Collections or Payouts are live. See <a href="#/guide/corridors">Corridors</a>.</p>
 <h2>Live corridors</h2>
 <div class="grid2">
   <div class="tile"><div class="pf-corridor">${fig('Chinese-flag-1.png', 'China')}<span>→</span>${fig('India-flag.png', 'India')}</div><b>China → India</b><span>Supplier settlements, treasury transfers and B2B payments.</span></div>
@@ -147,7 +147,7 @@ ${table(['Without regulated stablecoin infrastructure', 'With PayFuture'], [
   ['Dependence on correspondent banks', 'Direct rails, fewer intermediaries'],
   ['No visibility into fund movement', 'On-chain confirmation'],
 ])}
-${next('#/guide/funding', 'How USDT funding works in Enterprise')}
+${next('#/guide/funding', 'How funding works in Enterprise')}
 ${web('/solutions/stablecoin-cross-border-payments/', 'payfuture.net/solutions/stablecoin-cross-border-payments')}`;
 
 A['mass-payments'] = () => `${banner('mass-hero.jpg', 'Global mass payments for high-volume disbursements')}
@@ -171,5 +171,5 @@ ${feat([
   ['Settlement & reconciliation', 'Transactions, payouts and balances in one place.'],
   ['Alerts', 'Notifications for failures, delays or unusual activity.'],
 ])}
-<div class="callout"><p><b>From the API:</b> IGE <a href="#/ige/reconciliation">GetBalance and GetTransactionList</a> · CBS <a href="#/cbs/status">transactions and statements</a>.</p></div>
+<div class="callout"><p><b>From the API:</b> <a href="#/api/reconciliation">GetBalance and GetTransactionList</a>.</p></div>
 ${web('/solutions/reporting-and-analytics/', 'payfuture.net/solutions/reporting-and-analytics')}`;

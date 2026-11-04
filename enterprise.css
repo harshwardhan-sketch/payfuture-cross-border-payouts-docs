@@ -149,3 +149,6 @@ label.ck input:checked+span{text-decoration:line-through;color:var(--muted)}
 .ramp-node.hub b{color:#ffcc33}
 .ramp-arrow{align-self:center;font-size:20px;opacity:.5}
 @media (max-width:600px){.ramp{flex-direction:column}.ramp-arrow{transform:rotate(90deg);align-self:center}}
+.btn-ghost-dark{border:1px solid var(--border);color:var(--text);background:transparent}
+.result-card .ramp{margin:12px 0}
+.result-card .btn{margin-top:8px}
