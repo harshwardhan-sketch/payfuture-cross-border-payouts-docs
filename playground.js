@@ -1,17 +1,22 @@
 /* Hash playground (#/playground): build a body hash piece by piece, sign a body with HMAC,
-   and let the "hash detective" work out why a hash doesn't match. Same tool as on the Gateway docs.
-   Recipes come from SIG_RECIPES (pages.js). Pure JS hashing, so it works offline and on file://. */
+   and let the "hash detective" work out why a merchant's hash doesn't match. Same tool as on the Gateway docs.
+   Recipes come from api-data.js (the live docs). Pure JS hashing, so it works offline and on file://. */
 (() => {
-  const GROUP = {payout: 'Payout', resp: 'Payout', callback: 'Payout', getstatus: 'Get Status', getbalance: 'Get Balance', txlist: 'Transaction List'};
-  const NAME = {payout: 'Request · India Net Banking', resp: 'Response (verify)', callback: 'Callback (verify)', getstatus: 'Request', getbalance: 'Request', txlist: 'Signature'};
-  const RECIPES = SIG_RECIPES.map(([k, label, formula], i) => ({i, k, label, formula}));
-  const groupOf = r => GROUP[r.k];
-  const GROUPS = [...new Set(RECIPES.map(groupOf))];
-  const recipeName = r => NAME[r.k];
-  const parseRecipe = f => { const inner = f.replace(/^SHA256\(/i, '').replace(/\)\s*$/, ''); return inner.includes('~') ? {tokens: inner.split('~').map(x => x.trim()), sep: '~'} : {tokens: inner.split(/\s+/), sep: ''}; };
-  const isSecret = t => /^midsecret$/i.test(t);
-  const VAL = {midcode: 'MID123', merchantrefno: 'PO-000123', amount: '1500.00', currency: 'INR', bank_name: 'Example Bank', transactionid: 'INV78I1757502089824',
-    transaction_id: 'INV78I1757502089824', txnstatus: 'APPROVED', transaction_type: 'payout'};
+  const RECIPES = D[F].recipes
+    .map((r, i) => ({i, label: r.label, formula: r.formula, parts: r.label.split(' · ')}))
+    .filter(r => /^SHA256\(/i.test(r.formula) && !/serializ/i.test(r.formula));
+  const MAIN = ['Payout', 'Payin', 'Refund', 'Get Balance', 'Get Status'];
+  const groupOf = r => MAIN.includes(r.parts[0]) ? r.parts[0] : 'More';
+  const GROUPS = [...MAIN, 'More'].filter(g => RECIPES.some(r => groupOf(r) === g));
+  const recipeName = r => groupOf(r) === 'More' ? r.parts.join(' · ') : r.parts.slice(1).join(' · ').replace(/ Hash\b/, '');
+
+  const CCY = [['India', 'INR'], ['Nigeria', 'NGN'], ['Pakistan', 'PKR'], ['Morocco', 'MAD'], ['Egypt', 'EGP'], ['Bangladesh', 'BDT'], ['Philippines', 'PHP']];
+  const VAL = {midcode: 'MID123', merchantrefno: 'ORD-0001', merchantref: 'ORD-0001', merchant_ref_no: 'ORD-0001', amount: '100.00', refund_amount: '50.00', currency: 'PKR',
+    country: 'PK', transactionid: 'INVABC1757498791747', transaction_id: 'INVABC1757498791747', parent_transactionid: 'INVABC1757498000001', txnstatus: 'APPROVED',
+    transaction_type: 'payin', wallet_number: '03001234567', account_name: 'Asha Rao', account_holder_name: 'Ada Obi', account_number: '000123456789', bank_ifsc: 'ABCD0123456',
+    bank_name: 'Example Bank', bank_code: 'BANK01', document_id: '4210112345671', checkouturl: 'https://checkout.example.com/pay/abc123', available_balance: '1000.00',
+    running_balance: '1000.00', transactionref: 'REF-778899', requestamount: '1000.00', sendingcurrency: 'USD', receivingcurrency: 'PKR', quoteid: 'Q-1001', quote_id: 'Q-1001',
+    accept_quote: 'true', sendingamount: '1000.00', receivingamount: '278000.00', pin: '1234', otp: '123456', phone: '03001234567', postalcode: '10001'};
   const isAmount = t => /^(amount|refund_amount)$/i.test(t);
   const two = v => /^\s*-?\d+(\.\d+)?\s*$/.test(v) ? Number(v).toFixed(2) : v;
 
@@ -41,7 +46,7 @@ ${tabs([
 ])}
 </div>
 <h2>The rules, once more</h2>
-<ul><li>Fields in exactly the recipe order, joined with <code>~</code>. Callback hashes join them with <b>no separator</b>.</li><li>Amounts with two decimals: <code>1500.00</code>.</li><li>The MID secret in lower case.</li><li>All formulas: <a href="#/api/signing">Authentication &amp; signing</a>. Still stuck? Send your integration contact the string you hashed, with the secret removed.</li></ul>`;
+<ul><li>Fields in exactly the recipe order, joined with <code>~</code>. Callback hashes join them with <b>no separator</b>.</li><li>Amounts with two decimals: <code>100.00</code>.</li><li>The MID secret in lower case.</li><li>All recipes with a calculator: <a href="#/api/signing">Signing &amp; hash calculator</a>. Still stuck? Send your integration contact the string you hashed, with the secret removed.</li></ul>`;
 
   function init() {
     const $ = id => document.getElementById(id);
@@ -50,8 +55,8 @@ ${tabs([
     const recipe = () => parseRecipe(rec.formula);
     const defaultFor = t => {
       const k = t.toLowerCase();
-      if (k === 'currency') return 'INR';
-      if (k === 'transaction_type') return 'payout';
+      if (k === 'currency') { const c = CCY.find(([n]) => rec.label.includes(n)); if (c) return c[1]; }
+      if (k === 'transaction_type' && /Get Status/.test(rec.label)) return 'payout';
       return vals[k] ?? '';
     };
     const build = (o = {}) => {
@@ -130,7 +135,7 @@ ${tabs([
       const want = raw.toLowerCase(), {parts, sep} = build();
       const c = [['ok', join(parts, sep)]];
       const rs = build({rawSecret: true}); if (join(rs.parts, sep) !== c[0][1]) c.push(['Your MID secret isn’t in lower case. Lower-case it before hashing.', join(rs.parts, sep)]);
-      const ra = build({rawAmount: true}); if (join(ra.parts, sep) !== c[0][1]) c.push(['Amount format: write it with two decimals, like 1500.00.', join(ra.parts, sep)]);
+      const ra = build({rawAmount: true}); if (join(ra.parts, sep) !== c[0][1]) c.push(['Amount format: write it with two decimals, like 100.00.', join(ra.parts, sep)]);
       ['', '~', '|', ',', ' '].filter(s => s !== sep).forEach(s => c.push([`Wrong separator: you joined with ${s ? `“${s === ' ' ? 'a space' : s}”` : 'nothing'}, but this recipe uses ${sep ? `“${sep}”` : 'no separator'}.`, join(parts, s)]));
       c.push(['You left the MID secret out of the string.', join(parts.filter(p => !p.secret), sep)]);
       const sec = parts.find(p => p.secret);

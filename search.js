@@ -60,7 +60,7 @@
     NAV.guide.forEach(([, items]) => items.forEach(([id, t]) => add('guide', id, t, 'Integration guide', () => PAGES.guide[id]())));
     NAV.api.forEach(([, items]) => items.forEach(([id, t]) => add('api', id, t, 'API reference', () => PAGES.api[id]())));
     Object.entries(SOLO).forEach(([sec, [t, fn]]) => add(sec, '', t, t, fn));
-    ENT_DATA.errors.forEach(([code, msg, grp]) => docs.push({kind: 'error', url: `#/api/errors/${encodeURIComponent(code)}`, title: `Error ${code}`, area: 'Error codes', head: '', text: `${msg} (${grp})`, code: String(code), v1: '', all: lower(`${code} ${msg} ${grp}`)}));
+    D[F].errors.forEach(e => { const msg = e.ErrorMessage || ''; docs.push({kind: 'error', url: `#/api/errors/${encodeURIComponent(e.ErrorCode)}`, title: `Error ${e.ErrorCode}`, area: 'Error codes', head: '', text: msg, code: String(e.ErrorCode), v1: '', all: lower(`${e.ErrorCode} ${msg}`)}); });
     return docs;
   }
   const index = () => INDEX || (INDEX = buildIndex());

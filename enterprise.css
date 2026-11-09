@@ -131,3 +131,7 @@ label.ck input:checked+span{text-decoration:line-through;color:var(--muted)}
 p.next{margin:28px 0 8px}
 .home-ent .home-help{margin:34px 0 0}
 .home-ent .home-foot{padding-left:0;padding-right:0}
+.st-live,.st-soon,.st-doc{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.st-live{background:var(--brand-yellow);color:var(--brand-navy)}
+.st-soon{background:var(--surface-2);color:var(--text);border:1px dashed var(--border)}
+.st-doc{background:var(--surface-2);color:var(--muted);white-space:normal}

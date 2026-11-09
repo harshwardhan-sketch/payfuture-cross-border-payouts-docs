@@ -1,7 +1,8 @@
 /* PayFuture Cross-border Payouts developer docs: renderer and router.
    Sections: #/guide/... (Integration guide) and #/api/... (API reference), each with its own side menu,
    plus two full-width tool pages: #/corridors (Corridors) and #/playground (Hash playground).
-   Page content lives in guide.js, pages.js, corridors.js and playground.js; error-code data in data.js.
+   Page content lives in guide.js, pages.js, corridors.js and playground.js; the API reference mirrors the live docs
+   (api-data.js, rendered by apiref.js).
    Build-free: open index.html directly. Visible text never uses internal names (Enterprise, IGE, CBS, Legacy).
    Scope (Nov 2026): India payouts live; Pakistan coming soon (Confluence PMA 1979875329). */
 
@@ -46,7 +47,8 @@ const INIT = {};
 /* pages that moved or were removed: old links keep working */
 const MOVED = {'guide/playground': '#/playground', 'guide/corridors': '#/corridors', 'api/limits': '#/corridors', 'guide/payouts': '#/corridors',
   'guide/collections': '#/corridors', 'guide/enterprise': '#/guide/welcome', 'guide/find-your-product': '#/corridors', 'api/funding': '#/guide/funding',
-  'api/testing': '#/guide/go-live', 'api/faq': '#/guide/faq'};
+  'api/testing': '#/guide/go-live', 'api/faq': '#/guide/faq', 'api/status': '#/api/op-get-status', 'api/callbacks': '#/api/payout',
+  'api/reconciliation': '#/api/balance'};
 
 /* phones hide the header tabs, so the slide-out menu repeats them at the top */
 const mobileTabs = () => `<div class="mtabs">${[...document.querySelectorAll('#switch a')].map(a => `<a href="${a.getAttribute('href')}" data-tab="${a.dataset.tab}">${a.textContent}</a>`).join('')}<a href="https://www.payfuture.net/" target="_blank" rel="noopener">About PayFuture ↗</a></div>`;

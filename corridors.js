@@ -3,7 +3,8 @@
    Live scope from Confluence "Enterprise - Live Payment Methods Summary" (PMA 1979875329): India payouts,
    INR 500 – 400,000 per payout; Pakistan coming soon. Fields and proof of payment from document.payfuture.net.
    Funding currencies from the product offering page. Rate type and funding windows differ between sources,
-   so they are not stated: PayFuture confirms them at onboarding. */
+   so they are not stated: PayFuture confirms them at onboarding. The API reference mirrors the whole live docs,
+   so the table at the end says which of the documented methods are live. */
 (() => {
   const page = () => `<h1>Corridors</h1>
 <p class="lead">Where you can pay out today, how much, how fast and what you send. Your contracted limits may differ; PayFuture confirms them at onboarding.</p>
@@ -42,6 +43,16 @@
 <section class="cor soon">
   <h2>🇵🇰 Pakistan: coming soon</h2>
   <p>PKR payouts are on the way. Ask your PayFuture contact for timing; this page will show the details when the corridor is live.</p>
-</section>`;
+</section>
+
+<h2>Everything else in the API reference</h2>
+<p>The <a href="#/api/start">API reference</a> mirrors the full live API docs, so it also documents methods that are not live for Cross-border Payouts. Build only what is live for your MID, and ask your PayFuture contact before you build anything else.</p>
+${table(['What', 'Where', 'Status'], [
+  ['Payouts · Net Banking', '🇮🇳 India', '<span class="st-live">Live</span>'],
+  ['Payouts · Wallet, Bank Transfer', '🇵🇰 Pakistan', '<span class="st-soon">Coming soon</span>'],
+  ['Payouts · Bank Transfer', '🇳🇬 Nigeria · 🇵🇭 Philippines', '<span class="st-doc">In the API docs; ask your contact</span>'],
+  ['Payouts · Mobile Wallet, Bank Deposit, Cash', '🇪🇬 Egypt', '<span class="st-doc">In the API docs; ask your contact</span>'],
+  ['Pay-ins, refunds and quotes', 'Several markets', '<span class="st-doc">In the API docs; ask your contact</span>'],
+])}`;
   SOLO.corridors = ['Corridors', page];
 })();

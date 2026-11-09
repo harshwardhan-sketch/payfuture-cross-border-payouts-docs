@@ -51,7 +51,7 @@ function home() {
   <div class="grid3 stats-row">
     <div class="tile"><span class="stat">24x7</span><span>real-time IMPS payouts in India</span></div>
     <div class="tile"><span class="stat">UTR</span><span>bank reference in every paid callback</span></div>
-    <div class="tile"><span class="stat">${ENT_DATA.errors.length}</span><span>error codes, grouped by what to do next</span></div>
+    <div class="tile"><span class="stat">${D[F].errors.length}</span><span>error codes, searchable</span></div>
   </div>
   <section class="home-help">
     <div><h2>Need help?</h2><p>Your PayFuture integration contact is your first stop for credentials, IP whitelisting, funding instructions and limits.</p></div>
@@ -235,7 +235,7 @@ ${steps([
   ['Pay out', 'Each payout is debited from your INR balance. A declined payout leaves the money in your balance.'],
 ])}
 ${callout('<p><b>Funding window and FX rate:</b> PayFuture Finance confirms your funding cut-off and how your conversion rate is set when you onboard.</p>')}
-<p>API details: <a href="#/api/reconciliation">GetBalance and GetTransactionList</a>.</p>`;
+<p>API details: <a href="#/api/balance">GetBalance</a> and <a href="#/api/op-get-transaction-list">GetTransactionList</a>.</p>`;
 
 /* ================= GO LIVE ================= */
 GD['go-live'] = () => `<h1>Test & go live</h1>
@@ -291,7 +291,7 @@ ${q('Why do I get HTTP 403?', '<p>Your server IP is not whitelisted. Send PayFut
 ${q('My hash doesn\'t match. Help!', '<p>Paste it into the <a href="#/playground">hash detective</a>. Nine times out of ten it is amount format, secret case or field order.</p>')}
 ${q('How do I format the amount?', '<p>In the hash, always with two decimals: <code>1500.00</code>.</p>')}
 ${q('Which statuses are final?', '<p>Only <code>APPROVED</code> and <code>DECLINED</code>.</p>')}
-${q('I didn\'t receive a callback.', '<p>Check that your <code>notificationUrl</code> is public HTTPS and answers 200 quickly, then call <a href="#/api/status">GetStatus</a>. Reconcile daily so nothing slips through.</p>')}
+${q('I didn\'t receive a callback.', '<p>Check that your <code>notificationUrl</code> is public HTTPS and answers 200 quickly, then call <a href="#/api/op-get-status">GetStatus</a>. Reconcile daily so nothing slips through.</p>')}
 ${q('What is the proof that a payout was made?', '<p>The <code>utrnumber</code> (bank reference) in the callback and in GetStatus.</p>')}`;
 };
 
