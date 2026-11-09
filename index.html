@@ -3,32 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PayFuture Enterprise Developer Docs</title>
+<title>PayFuture Cross-border Payouts · Developer Docs</title>
+<meta name="description" content="Guides, API reference and tools for PayFuture Cross-border Payouts: fund in USDT, USD or EUR and pay out INR to bank accounts in India.">
+<meta name="theme-color" content="#163a4d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Roboto:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Roboto:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Roboto:wght@400;500&display=swap"></noscript>
 <link rel="icon" href="assets/logo.svg">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="enterprise.css">
+<link rel="stylesheet" href="styles.css?v=5fe453c7dc">
+<link rel="stylesheet" href="enterprise.css?v=150da6e564">
 </head>
 <body>
-<div class="draft">Draft for internal review. Items marked <span class="tc">TO CONFIRM</span> are not yet confirmed by PayFuture and must be resolved before merchants see this site.</div>
 <header>
-  <button class="iconbtn" id="menuBtn" aria-label="Menu">☰</button>
-  <a class="logo" href="#/" aria-label="PayFuture Enterprise Developer Docs home"><img src="assets/logo.svg" alt="PayFuture"><small>Enterprise Developers</small></a>
+  <button class="iconbtn" id="menuBtn" type="button" aria-label="Open menu">☰</button>
+  <a class="logo" href="#/" aria-label="PayFuture Cross-border Payouts developer docs home"><img src="assets/logo.svg" alt="PayFuture"><small>Developers</small></a>
   <div class="switch" id="switch">
-    <a href="#/about/who-we-are" data-tab="about">About PayFuture</a>
-    <a href="#/guide/welcome" data-tab="guide">Enterprise guide</a>
-    <a href="#/api/start" data-tab="api">API reference</a>
+    <a href="#/guide/welcome" data-tab="guide" class="legacy">Integration guide</a>
+    <a href="#/corridors" data-tab="corridors" class="legacy">Corridors</a>
+    <a href="#/api/start" data-tab="api" class="legacy">API reference</a>
+    <a href="#/playground" data-tab="playground" class="legacy">Hash playground</a>
   </div>
+  <a class="about-link" href="https://www.payfuture.net/" target="_blank" rel="noopener" title="Opens payfuture.net in a new tab" aria-label="About PayFuture (opens payfuture.net in a new tab)">About PayFuture ↗</a>
   <div class="spacer"></div>
-  <button class="iconbtn" id="themeBtn" aria-label="Toggle theme">◐ Theme</button>
+  <button class="searchbtn" id="searchBtn" type="button" aria-label="Search the docs" aria-keyshortcuts="Control+K Meta+K /">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search docs</span><kbd>⌘K</kbd>
+  </button>
+  <button class="iconbtn" id="themeBtn" type="button" aria-label="Switch between light and dark theme" title="Light / dark theme"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
 </header>
+<div id="progress" aria-hidden="true"></div>
 <div id="app"></div>
-<script src="data.js"></script>
-<script src="app.js"></script>
-<script src="about.js"></script>
-<script src="guide.js"></script>
-<script src="pages.js"></script>
+<button id="toTop" type="button" aria-label="Back to top" hidden><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 14l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<script src="data.js?v=e0f4008cf2"></script>
+<script src="app.js?v=26614f92aa"></script>
+<script src="guide.js?v=4fb766ff2d"></script>
+<script src="pages.js?v=8d08a76a0b"></script>
+<script src="corridors.js?v=820cb68765"></script>
+<script src="playground.js?v=22b41b82f6"></script>
+<script src="motion.js?v=0cf6b8577c"></script>
+<script src="search.js?v=358b0b1aa8"></script>
+<script>render();</script>
 </body>
 </html>

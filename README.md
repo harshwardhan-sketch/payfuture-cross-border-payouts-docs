@@ -1,33 +1,27 @@
-# PayFuture Enterprise Developer Docs
+# PayFuture Cross-border Payouts: developer docs
 
-A static, build-free docs site for **PayFuture Enterprise**: one platform, two products.
+Merchant-facing docs for PayFuture Cross-border Payouts: fund in USDT, USD or EUR, pay out INR in India.
+Build-free static site: open `index.html` or serve the folder; no build step.
 
-- **Collections (pay-ins)**: an INR collection account in India, settled in USDT, USD or EUR.
-- **Payouts (remittance)**: fund in USDT, USD or EUR and pay out to India and Pakistan through the Enterprise API (`igateway-gwapi.payfuture.net`).
-
-It is kept separate from the Legacy (IG) site in `~/payfuture-merchant-docs`.
-
-## Run it
-
-Open `index.html` in a browser. There is no server and no build step.
+## Tabs
+Integration guide · Corridors · API reference · Hash playground · About PayFuture ↗ (opens payfuture.net)
 
 ## Files
+- `index.html`: header, tabs, script order
+- `app.js`: router (guide/api sections with their own menus, full-width tool pages, redirects for old links), helpers, SHA-256 and HMAC (pure JS, works on file://)
+- `guide.js`: home page and Integration guide
+- `pages.js`: API reference, signature recipes (`SIG_RECIPES`), error codes page
+- `corridors.js`: Corridors tab (India live; Pakistan coming soon)
+- `playground.js`: Hash playground (body hash, HMAC header, hash detective, code snippets)
+- `search.js`: site search (header button, Ctrl/⌘K, "/")
+- `motion.js`: subtle animations (off under reduced motion)
+- `data.js`: error codes an India payout integration can return (from document.payfuture.net)
+- `styles.css` (shared with the Gateway docs) + `enterprise.css` (this site's components)
 
-| File | What it holds |
-|---|---|
-| `index.html` | The page shell and the header tabs: About PayFuture · Enterprise guide · API reference |
-| `app.js` | Router, helpers and SHA-256 |
-| `about.js` | The company pages (who we are, what we do, markets, industries, the solutions behind Enterprise). Copy and images come from payfuture.net and live in `assets/site/` |
-| `guide.js` | The Enterprise guide (Collections, Payouts, funding, corridors, quickstart), plus the home page, product finder, payout simulator, signature playground and go-live checklist |
-| `pages.js` | The Enterprise API reference |
-| `data.js` | Error codes curated from document.payfuture.net `ErrorCodeList.json` to the 149 an Enterprise call can return |
-| `styles.css`, `assets/logo.svg` | Shared PayFuture theme, copied from the Legacy site |
-| `enterprise.css` | Enterprise styles: hero, flow diagrams, finder, simulator, playground, checklist |
-| `REVIEW.md` | Internal: open questions and sources. **Do not ship to merchants** |
+## Content rules
+- Sources: document.payfuture.net (API), Confluence "Enterprise - Live Payment Methods Summary" (live scope, limits), product offering page (funding currencies).
+- Only live, confirmed facts. India payouts are live; Pakistan is shown only as "coming soon". Collections are not shown.
+- No internal names in anything visible (Enterprise, IGE, CBS, Legacy), no provider names, no secrets or funding details.
 
-## Rules
-
-- coverage.payfuture.net is the source of truth for products, corridors, funding and limits; document.payfuture.net for the API.
-- Show only **Live** features. Nothing in testing or on the roadmap.
-- Anything unconfirmed carries a `TO CONFIRM` badge and a matching entry in REVIEW.md.
-- Never publish secrets, funding addresses, bank details or internal hosts (QA, UAT, CBS Demo URLs).
+## Before every commit
+Run `python3 tools/stamp.py`. It adds `?v=<hash>` to every CSS/JS link in index.html so browsers never mix a new page with cached old files. `python3 tools/stamp.py --check` fails if a stamp is stale.
