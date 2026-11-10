@@ -1,10 +1,10 @@
-# PayFuture Cross-border Payouts: developer docs
+# Payfuture Cross-border Payouts: developer docs
 
-Merchant-facing docs for PayFuture Cross-border Payouts: fund in USDT, USD or EUR, pay out INR in India.
+Merchant-facing docs for Payfuture Cross-border Payouts: fund in USDT, USD or EUR, pay out INR in India.
 Build-free static site: open `index.html` or serve the folder; no build step.
 
 ## Tabs
-Integration guide · Corridors · API reference · Hash playground · About PayFuture ↗ (opens payfuture.net)
+Integration guide · Corridors · API reference · Hash playground · About Payfuture ↗ (opens payfuture.net)
 
 ## Files
 - `index.html`: header, tabs, script order

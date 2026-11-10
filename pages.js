@@ -33,7 +33,7 @@ ${table(['requestType', 'What it does'], [
   ['<code>GetStatus</code>', 'The status of one transaction. <a href="#/api/op-get-status">Get Status</a>'],
   ['<code>GetTransactionList</code>', 'Your transactions, for reconciliation. <a href="#/api/op-get-transaction-list">Get Transaction List</a>'],
 ])}
-${callout('<p><b>What is live for you.</b> This reference mirrors the full live API docs at document.payfuture.net, including methods and countries that may not be enabled on your MID. India payouts are live today; see <a href="#/corridors">Corridors</a>, and ask your PayFuture contact before you build anything else.</p>', 'warn')}
+${callout('<p><b>What is live for you.</b> This reference mirrors the full live API docs at document.payfuture.net, including methods and countries that may not be enabled on your MID. India payouts are live today; see <a href="#/corridors">Corridors</a>, and ask your Payfuture contact before you build anything else.</p>', 'warn')}
 ${code(`{
   "requestType": "PAYOUT",
   "data": { "midCode": "<your MID>", "...": "..." }
@@ -44,11 +44,11 @@ ${src(['document.payfuture.net', API_DOCS])}`;
 I.onboarding = () => `<h1>Before you start</h1>
 <p class="lead">You need four things from onboarding before your first call.</p>
 ${steps([
-  ['MID and MID secret', 'PayFuture issues these. The secret signs every request, so keep it on your server only, never in an app or browser.'],
-  ['IP whitelisting', 'Send PayFuture the public IPs of the servers that will call the API. Calls from other IPs get HTTP 403.'],
+  ['MID and MID secret', 'Payfuture issues these. The secret signs every request, so keep it on your server only, never in an app or browser.'],
+  ['IP whitelisting', 'Send Payfuture the public IPs of the servers that will call the API. Calls from other IPs get HTTP 403.'],
   ['Callback URL', 'A public HTTPS URL on your side. You send it on each payout in <code>merchantUrl.notificationUrl</code>.'],
-  ['Funding instructions', 'PayFuture Finance gives you the USDT address or the bank details for USD and EUR. They are never published on this site.'],
+  ['Funding instructions', 'Payfuture Finance gives you the USDT address or the bank details for USD and EUR. They are never published on this site.'],
 ])}
-${callout('<p><b>Not the PayFuture Gateway.</b> Payouts run on <code>igateway-gwapi.payfuture.net</code>. Gateway (paygate10.com) MIDs and secrets do not work here.</p>', 'warn')}
+${callout('<p><b>Not the Payfuture Gateway.</b> Payouts run on <code>igateway-gwapi.payfuture.net</code>. Gateway (paygate10.com) MIDs and secrets do not work here.</p>', 'warn')}
 ${src(['document.payfuture.net', API_DOCS])}`;
 

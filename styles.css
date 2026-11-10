@@ -1,4 +1,4 @@
-/* PayFuture brand (www.payfuture.net Elementor kit): primary #163a4d, secondary #f7ea03, teal #003d4e,
+/* Payfuture brand (www.payfuture.net Elementor kit): primary #163a4d, secondary #f7ea03, teal #003d4e,
    light surfaces #f7fbfd / #e7f4fc / #d7eaf4, green #75c32c; Montserrat headings, Roboto text. */
 :root{
   --brand-navy:#163a4d; --brand-yellow:#f7ea03; --brand-teal:#003d4e; --brand-green:#75c32c;
@@ -177,7 +177,7 @@ details.faq[open] summary{margin-bottom:6px}
 .pill2{display:inline-block;font-size:12px;border:1px solid var(--border);border-radius:999px;padding:1px 9px;margin:2px 4px 2px 0;background:var(--surface-2)}
 @media (max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
 
-/* ---------- PayFuture brand layer ---------- */
+/* ---------- Payfuture brand layer ---------- */
 body{font-family:var(--font-body)}
 h1,h2,h3,h4,.logo,.card h2,.hero h1,.tile b,.stat,.switch a,.pager a,.tabs button,th{font-family:var(--font-head)}
 main h1,.hero h1{font-weight:700;letter-spacing:-.01em}
@@ -549,7 +549,7 @@ main.enter>.flash,main.enter>section>.flash{animation:pfFlash 1.8s ease-out}
   body.menu .layout.solo nav.side{display:block}
 }
 
-/* header: About PayFuture opens payfuture.net */
+/* header: About Payfuture opens payfuture.net */
 .about-link{margin-left:12px;font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap;font-family:var(--font-head)}
 .about-link:hover{color:var(--text);text-decoration:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

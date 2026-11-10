@@ -125,18 +125,18 @@ function opPage(flow, opId) {
 function errorsPage(flow, q = '') {
   const list = D[flow].errors;
   return `<h1>Error codes</h1>${sourceLink(flow, 'error-code.shtml')}
-  <p class="lead">Errors are returned with HTTP 200 in the response <code>error[]</code> array as <code>{ errorCode, errorMessage }</code>. This is the full list from the live API docs.</p>
+  <p class="lead">Errors are returned with HTTP 200 in the response <code>error[]</code> array as <code>{ errorCode, errorMessage }</code>. Search for the code or a word from the message to see what it means and how to fix it.</p>
   <input class="errsearch" id="errSearch" type="search" placeholder="Search by code or message, e.g. 11031 or hash" aria-label="Search error codes" value="${esc(q)}">
   <p class="count" id="errCount">${list.length} codes</p>
-  <table id="errTable"><thead><tr><th>Code</th><th>Message</th></tr></thead><tbody>${
-    list.map(e => `<tr><td><code>${esc(e.ErrorCode)}</code></td><td>${esc(e.ErrorMessage || '')}</td></tr>`).join('')
+  <table id="errTable" class="errtable"><thead><tr><th>Code</th><th>Message</th><th>How to fix</th></tr></thead><tbody>${
+    list.map(e => `<tr data-s="${esc(`${e.ErrorCode} ${e.ErrorMessage || ''}`.toLowerCase()).replace(/"/g, '&quot;')}"><td><code>${esc(e.ErrorCode)}</code></td><td>${esc(e.ErrorMessage || '')}</td><td class="errfix">${ERROR_FIX(e.ErrorCode, e.ErrorMessage)}</td></tr>`).join('')
   }</tbody></table>`;
 }
 function filterErrors() {
   const box = document.getElementById('errSearch'); if (!box) return;
   const words = box.value.toLowerCase().split(/\s+/).filter(Boolean); let n = 0;
   document.querySelectorAll('#errTable tbody tr').forEach(tr => {
-    const t = tr.textContent.toLowerCase(), show = words.every(w => t.includes(w));
+    const t = tr.dataset.s || tr.textContent.toLowerCase(), show = words.every(w => t.includes(w));
     tr.style.display = show ? '' : 'none'; n += show;
   });
   const total = document.querySelectorAll('#errTable tbody tr').length;
@@ -163,7 +163,7 @@ P.signing = f => {
     <a class="tile" href="#" data-jump="body-hash"><span class="tag">Per request type</span><b>Option B · Body hash</b><span>Join specific fields with <code>~</code>, add your secret and send the SHA-256 in the <code>hash</code> field. Each request type has its own field order.</span></a>
   </div>
   <div class="callout ok"><p><b><a href="#/playground">Hash playground</a>.</b> Build a hash piece by piece, sign a body with HMAC, and let the hash detective tell you why yours doesn't match.</p></div>
-  <div class="callout"><p><b>Callbacks carry a body hash.</b> When PayFuture calls your <code>notificationUrl</code>, check its <a href="#" data-jump="callback-recipes">callback hash</a>, whichever option you use to sign your requests.</p></div>
+  <div class="callout"><p><b>Callbacks carry a body hash.</b> When Payfuture calls your <code>notificationUrl</code>, check its <a href="#" data-jump="callback-recipes">callback hash</a>, whichever option you use to sign your requests.</p></div>
 
   <section id="hmac"><h2>Option A · Signature header (HMAC)</h2>
   <div class="formula"><span>X-Callback-Signature: sha256=HEX( HMAC-SHA256( key = midsecret, message = raw request body bytes ) )</span></div>

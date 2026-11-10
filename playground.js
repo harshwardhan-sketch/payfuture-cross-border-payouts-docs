@@ -119,7 +119,7 @@ ${tabs([
       out.classList.remove('flash'); void out.offsetWidth; out.classList.add('flash');
       let n = `${new TextEncoder().encode(hb.value).length} bytes signed.`;
       try { JSON.parse(hb.value); } catch (_) { n += ' This body is not valid JSON.'; }
-      if (last && last !== v) n += ' The signature changed: send exactly these bytes, or PayFuture answers 11031.';
+      if (last && last !== v) n += ' The signature changed: send exactly these bytes, or Payfuture answers 11031.';
       note.textContent = n; last = v;
     };
     hb.oninput = hs.oninput = hm;

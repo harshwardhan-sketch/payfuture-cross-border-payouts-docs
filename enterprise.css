@@ -1,4 +1,4 @@
-/* Enterprise-only additions on top of the shared PayFuture docs theme (styles.css). */
+/* Enterprise-only additions on top of the shared Payfuture docs theme (styles.css). */
 .st{display:inline-block;font-family:var(--font-head);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:1px 9px;vertical-align:2px;white-space:nowrap}
 .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13.5px;color:var(--muted);margin:8px 0 18px}
 .flow{width:100%;height:auto;margin:12px 0 4px}
@@ -135,3 +135,11 @@ p.next{margin:28px 0 8px}
 .st-live{background:var(--brand-yellow);color:var(--brand-navy)}
 .st-soon{background:var(--surface-2);color:var(--text);border:1px dashed var(--border)}
 .st-doc{background:var(--surface-2);color:var(--muted);white-space:normal}
+
+/* error codes: how to fix */
+.errtable td:first-child{white-space:nowrap}
+.errtable small.v1{display:block;margin-top:3px;font-size:11.5px;color:var(--muted)}
+.errtable td.errfix{font-size:14px;line-height:1.55;min-width:280px}
+.errtable td:nth-child(2){min-width:180px}
+.sm-fix{display:block;font-size:12.5px;color:var(--text);margin-top:4px;line-height:1.5;padding:5px 8px;border-left:3px solid var(--brand-green);background:var(--surface-2);border-radius:0 6px 6px 0}
+.sm-fix b{font-weight:600}

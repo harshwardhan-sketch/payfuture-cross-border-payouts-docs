@@ -19,6 +19,7 @@
   let INDEX = null;
   const lower = s => s.toLowerCase();
   const clean = s => s.replace(/\s+/g, ' ').trim();
+  const plain = html => { const t = document.createElement('template'); t.innerHTML = html; return clean(t.content.textContent); };
 
   /* split rendered HTML into chunks at each h2/h3 (and each FAQ question) */
   function chunks(html) {
@@ -60,7 +61,7 @@
     NAV.guide.forEach(([, items]) => items.forEach(([id, t]) => add('guide', id, t, 'Integration guide', () => PAGES.guide[id]())));
     NAV.api.forEach(([, items]) => items.forEach(([id, t]) => add('api', id, t, 'API reference', () => PAGES.api[id]())));
     Object.entries(SOLO).forEach(([sec, [t, fn]]) => add(sec, '', t, t, fn));
-    D[F].errors.forEach(e => { const msg = e.ErrorMessage || ''; docs.push({kind: 'error', url: `#/api/errors/${encodeURIComponent(e.ErrorCode)}`, title: `Error ${e.ErrorCode}`, area: 'Error codes', head: '', text: msg, code: String(e.ErrorCode), v1: '', all: lower(`${e.ErrorCode} ${msg}`)}); });
+    D[F].errors.forEach(e => { const msg = e.ErrorMessage || ''; docs.push({kind: 'error', url: `#/api/errors/${encodeURIComponent(e.ErrorCode)}`, title: `Error ${e.ErrorCode}`, area: 'Error codes', head: '', text: msg, fix: plain(ERROR_FIX(e.ErrorCode, msg)), code: String(e.ErrorCode), v1: '', all: lower(`${e.ErrorCode} ${msg}`)}); });
     return docs;
   }
   const index = () => INDEX || (INDEX = buildIndex());
@@ -159,6 +160,7 @@
       <span class="sm-area ${AREA_CLS[d.area] || ''}">${esc(d.area)}</span>
       <span class="sm-title">${mark(d.title, ts)}${d.head ? `<span class="sm-sep">›</span>${mark(d.head, ts)}` : ''}</span>
       ${d.text ? `<span class="sm-snip">${mark(snippet(d.text, ts), ts)}</span>` : ''}
+      ${d.fix ? `<span class="sm-fix"><b>How to fix:</b> ${esc(d.fix.length > 170 ? d.fix.slice(0, 168).replace(/\s\S*$/, '') + '…' : d.fix)}</span>` : ''}
     </a>`).join('');
   }
   function move(n) {
