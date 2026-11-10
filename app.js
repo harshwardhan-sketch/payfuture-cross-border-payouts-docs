@@ -4,7 +4,7 @@
    Page content lives in guide.js, pages.js, corridors.js and playground.js; the API reference mirrors the live docs
    (api-data.js, rendered by apiref.js).
    Build-free: open index.html directly. Visible text never uses internal names (Enterprise, IGE, CBS, Legacy).
-   Scope (Nov 2026): India payouts live; Pakistan coming soon (Confluence PMA 1979875329). */
+   Scope (Nov 2026): India payouts live; Pakistan API ready, testing in progress (Confluence PMA 1979875329). */
 
 /* ---------- helpers ---------- */
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -47,7 +47,7 @@ const INIT = {};
 /* pages that moved or were removed: old links keep working */
 const MOVED = {'guide/playground': '#/playground', 'guide/corridors': '#/corridors', 'api/limits': '#/corridors', 'guide/payouts': '#/corridors',
   'guide/collections': '#/corridors', 'guide/enterprise': '#/guide/welcome', 'guide/find-your-product': '#/corridors', 'api/funding': '#/guide/funding',
-  'api/testing': '#/guide/go-live', 'api/faq': '#/guide/faq', 'api/status': '#/api/op-get-status', 'api/callbacks': '#/api/payout',
+  'api/testing': '#/guide/go-live', 'api/faq': '#/guide/faq', 'api/status': '#/api/op-get-status',
   'api/reconciliation': '#/api/balance'};
 
 /* phones hide the header tabs, so the slide-out menu repeats them at the top */
@@ -56,13 +56,15 @@ const setTab = tab => document.querySelectorAll('#switch a, .mtabs a').forEach(a
 
 /* ---------- router ---------- */
 const app = document.getElementById('app');
+/* sidebar groups the reader folded away (kept in this browser) */
+const CLOSED = new Set((() => { try { return JSON.parse(localStorage.getItem('pf-nav-closed') || '[]'); } catch (_) { return []; } })());
 function render() {
   const [, sec, id, arg] = (location.hash || '#/').split('/');
   document.body.classList.remove('menu');
   if (sec === 'about') { location.replace('#/'); return; }
   if (MOVED[sec + '/' + id]) { location.replace(MOVED[sec + '/' + id]); return; }
   if (SOLO[sec]) {
-    app.innerHTML = `<div class="layout solo" data-sec="${sec}"><nav class="side">${mobileTabs()}</nav><main>${SOLO[sec][1]()}</main></div>`;
+    app.innerHTML = `<div class="layout solo" data-sec="${sec}"><nav class="side">${mobileTabs()}</nav><main>${SOLO[sec][1](id)}</main></div>`;
     setTab(sec); document.title = `${SOLO[sec][0]} · Payfuture Cross-border Payouts`; window.scrollTo(0, 0); afterRender(sec); return;
   }
   if (!SECTIONS[sec]) {
@@ -73,16 +75,19 @@ function render() {
   const cur = flat.find(i => i[0] === id) || flat[0];
   const idx = flat.indexOf(cur), prev = flat[idx - 1], next = flat[idx + 1];
   const S = SECTIONS[sec];
-  const pager = `<div class="pager">${prev ? `<a href="#/${sec}/${prev[0]}"><small>Previous</small>${prev[1]}</a>` : '<span></span>'}${next ? `<a href="#/${sec}/${next[0]}" style="text-align:right"><small>Next</small>${next[1]}</a>` : ''}</div>`;
-  const main = `<div class="crumb">${S.label} · ${cur[2]}</div>${PAGES[sec][cur[0]](arg)}${pager}`;
+  const pager = `<div class="pager">${prev ? `<a href="#/${sec}/${prev[0]}" class="pg-prev"><small>← Previous</small>${prev[1]}</a>` : '<span></span>'}${next ? `<a href="#/${sec}/${next[0]}" class="pg-next"><small>Next →</small>${next[1]}</a>` : ''}</div>
+    <div class="page-help"><span>Need help? Reach out on your integration channel · <a href="#/${sec === 'api' ? 'api/errors' : 'guide/support'}">${sec === 'api' ? 'Error codes and fixes' : 'How to raise an issue'}</a></span></div>`;
+  const main = `<nav class="crumb" aria-label="Breadcrumb"><a href="#/${sec}/${NAV[sec][0][1][0][0]}">${S.label}</a><span>/</span>${cur[2]}<span>/</span><b>${cur[1]}</b></nav>${PAGES[sec][cur[0]](arg)}${pager}`;
   const layout = app.querySelector('.layout');
   if (layout && layout.dataset.sec === sec) {
     layout.querySelector('main').innerHTML = main;
-    layout.querySelectorAll('nav.side > a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === `#/${sec}/${cur[0]}`));
+    layout.querySelectorAll('nav.side .sg a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === `#/${sec}/${cur[0]}`));
+    const g = layout.querySelector('nav.side .sg a.on')?.closest('.sg'); if (g && g.classList.contains('closed')) { g.classList.remove('closed'); g.querySelector('.sg-h').setAttribute('aria-expanded', 'true'); }
   } else {
     app.innerHTML = `<div class="layout" data-sec="${sec}">
       <nav class="side">${mobileTabs()}<div class="side-product">${S.label} <small>${S.sub}</small></div><input id="navFilter" type="search" placeholder="Filter this menu" aria-label="Filter the menu by page title">
-        ${NAV[sec].map(([g, items]) => `<h4>${g}</h4>${items.map(([pid, t]) => `<a href="#/${sec}/${pid}" class="${pid === cur[0] ? 'on' : ''}">${t}</a>`).join('')}`).join('')}
+        ${NAV[sec].map(([g, items]) => { const open = !CLOSED.has(sec + ':' + g) || items.some(([pid]) => pid === cur[0]);
+          return `<div class="sg${open ? '' : ' closed'}" data-g="${sec}:${g}"><h4><button type="button" class="sg-h" aria-expanded="${open}">${g}<span class="sg-chev" aria-hidden="true"></span></button></h4>${items.map(([pid, t]) => `<a href="#/${sec}/${pid}" class="${pid === cur[0] ? 'on' : ''}">${t}</a>`).join('')}</div>`; }).join('')}
       </nav><main>${main}</main></div>`;
   }
   setTab(S.tab);
@@ -113,6 +118,27 @@ document.addEventListener('click', e => {
     tb.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === tb));
     document.querySelectorAll(`[data-pane^="${id}-"]`).forEach(p => p.classList.toggle('on', p.dataset.pane === `${id}-${i}`));
   }
+  /* sidebar group headings fold their links */
+  const gh = e.target.closest('.sg-h');
+  if (gh) {
+    const g = gh.closest('.sg'), closed = g.classList.toggle('closed');
+    gh.setAttribute('aria-expanded', !closed);
+    closed ? CLOSED.add(g.dataset.g) : CLOSED.delete(g.dataset.g);
+    try { localStorage.setItem('pf-nav-closed', JSON.stringify([...CLOSED])); } catch (_) { /* ignore */ }
+    return;
+  }
+  /* in-page links (section shortcuts): scroll to the target, opening any folded parent first */
+  const j = e.target.closest('[data-jump]');
+  if (j) {
+    e.preventDefault();
+    const el = document.getElementById(j.dataset.jump);
+    if (el) { for (let p = el.parentElement; p; p = p.parentElement) if (p.tagName === 'DETAILS') p.open = true;
+      el.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start'});
+      /* if smooth scrolling is unavailable or interrupted, land on the section anyway */
+      setTimeout(() => { if (Math.abs(el.getBoundingClientRect().top - 84) > 40 && innerHeight + scrollY < document.documentElement.scrollHeight - 2) el.scrollIntoView({block: 'start'}); }, 800);
+      el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+    return;
+  }
   const ds = e.target.closest('[data-search]');
   if (ds) { e.preventDefault(); window.openSearch?.(ds.dataset.search); }
   const b = e.target.closest('.copy-mini');
@@ -121,6 +147,7 @@ document.addEventListener('click', e => {
 document.addEventListener('input', e => {
   if (e.target.id === 'navFilter') {
     const q = e.target.value.toLowerCase().trim(), side = e.target.closest('nav.side'); let any = 0;
+    side.classList.toggle('filtering', !!q);
     side.querySelectorAll('h4').forEach(h => {
       let n = h.nextElementSibling, shown = 0;
       while (n && n.tagName === 'A') { const ok = n.textContent.toLowerCase().includes(q); n.style.display = ok ? '' : 'none'; shown += ok; n = n.nextElementSibling; }

@@ -25,21 +25,22 @@
 <div class="callout warn"><p>Use a <b>test</b> secret only. The demo secret below is made up.</p></div>
 <div class="pg">
 ${tabs([
-  ['Body hash', `<div class="pg-l">Request type</div><div class="chips" id="pgGroups">${GROUPS.map((g, i) => `<button type="button" class="chip${i ? '' : ' on'}" data-g="${esc(g)}">${esc(g)}</button>`).join('')}</div>
+  ['Body hash', `<div class="pg-split"><div class="pg-in"><div class="pg-l">Request type</div><div class="chips" id="pgGroups">${GROUPS.map((g, i) => `<button type="button" class="chip${i ? '' : ' on'}" data-g="${esc(g)}">${esc(g)}</button>`).join('')}</div>
     <div class="pg-l">Recipe</div><div class="chips chips-sm" id="pgRecipes"></div>
     <div class="pg-formula" id="pgFormula"></div>
     <div class="pg-grid"><div id="pgFields" class="pg-fields"></div>
       <div><label class="pg-l" for="pgSecret">MID secret</label><input id="pgSecret" value="Demo_Secret_42" autocomplete="off" spellcheck="false"></div></div>
+    </div><div class="pg-res">
     <div class="pg-l">The string that gets hashed</div><div class="pg-string" id="pgString" aria-live="polite"></div>
     <div class="pg-fixes" id="pgFixes"></div>
     <div class="pg-l">SHA-256 · send this in <code>hash</code></div><div class="pg-out"><code id="pgHash"></code><button type="button" class="copy-mini" data-copy="pgHash">Copy</button></div>
-    <div class="pg-l">The same in your code</div><div id="pgCode"></div>`],
+    <div class="pg-l">The same in your code</div><div id="pgCode"></div></div></div>`],
   ['Signature header', `<p>The <code>X-Callback-Signature</code> header signs the <b>raw request body</b> with HMAC-SHA256 instead. One extra space changes the signature completely, so sign exactly the bytes you send. Try the buttons below.</p>
-    <label class="pg-l" for="hmBody">Raw request body</label><textarea id="hmBody" rows="5" spellcheck="false">{"requestType":"GetBalance","data":{"midCode":"MID123"}}</textarea>
+    <div class="pg-split"><div class="pg-in"><label class="pg-l" for="hmBody">Raw request body</label><textarea id="hmBody" rows="5" spellcheck="false">{"requestType":"GetBalance","data":{"midCode":"MID123"}}</textarea>
     <div class="chips"><button type="button" class="chip" id="hmPretty">Pretty-print it</button><button type="button" class="chip" id="hmMin">Minify it</button></div>
     <label class="pg-l" for="hmSecret">MID secret</label><input id="hmSecret" value="Demo_Secret_42" autocomplete="off" spellcheck="false">
-    <div class="pg-l">Header to send</div><div class="pg-out"><code id="hmOut"></code><button type="button" class="copy-mini" data-copy="hmOut">Copy</button></div>
-    <p id="hmNote" class="pg-note"></p>`],
+    </div><div class="pg-res"><div class="pg-l">Header to send</div><div class="pg-out"><code id="hmOut"></code><button type="button" class="copy-mini" data-copy="hmOut">Copy</button></div>
+    <p id="hmNote" class="pg-note"></p></div></div>`],
   ['Hash detective', `<p>Pick the recipe and type your values on the <b>Body hash</b> tab first. Then paste the hash <b>your code</b> produced. The detective tries the usual mistakes and tells you which one you made.</p>
     <div class="det-row"><input id="detIn" placeholder="Paste your 64-character hash" autocomplete="off" spellcheck="false"><button type="button" class="btn btn-navy" id="detGo">Investigate</button></div>
     <div id="detOut" class="det-out" aria-live="polite"></div>`],

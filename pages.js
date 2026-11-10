@@ -5,41 +5,67 @@ const I = PAGES.api;
 const OPS = otherOps(F).map(s => ['op-' + s.id, s.title]);
 
 NAV.api = [
-  ['Get started', [['start', 'Overview'], ['onboarding', 'Before you start'], ['signing', 'Signing & hash calculator']]],
+  ['Get started', [['start', 'Overview'], ['onboarding', 'Before you start']]],
+  /* signing, hashes and callbacks come before the requests: a request needs its hash and notificationUrl */
+  ['Before your first request', [['signing', 'Signing & hash calculator'], ['hashes', 'Hash generation'], ['callbacks', 'Callbacks']]],
   ['Requests', [['payout', 'Payout'], ['payin', 'Payin'], ['refund', 'Refund']]],
   ['Utilities', [['balance', 'Get Balance'], ...OPS]],
   ['Reference', [['errors', 'Error codes']]],
 ];
-Object.keys(API_PAGES).forEach(k => { I[k] = () => apiPage(F, k); });
-OPS.forEach(([id]) => { I[id] = () => opPage(F, id.slice(3)); });
+/* Every operation (Payout, Payin, Refund, Get Balance, utilities) uses the parameters + code panel layout (apiref2.js).
+   Status per country, for the badges in the picker: Confluence PMA 1979875329 (India payouts live, Pakistan testing). */
+const API_STATUS = (key, country) => key === 'payout' ? ({India: 'live', Pakistan: 'soon'}[country] || 'doc') : 'doc';
+Object.keys(API_PAGES).forEach(k => { I[k] = arg => API2.render(F, k, arg ? decodeURIComponent(arg) : '', API_STATUS); INIT[k] = arg => API2.init(k, arg); });
+I.hashes = () => API2.hashesPage(F);
+I.callbacks = () => API2.callbacksPage(F);
+INIT.hashes = arg => { const el = arg && document.getElementById('h-' + arg); if (el) el.scrollIntoView({block: 'start'}); };
+OPS.forEach(([id]) => { I[id] = arg => API2.renderOp(F, id.slice(3), arg ? decodeURIComponent(arg) : ''); INIT[id] = arg => API2.init(id, arg); });
 I.signing = () => P.signing(F);
 INIT.signing = arg => initCalc(F, arg);
 I.errors = arg => errorsPage(F, arg ? decodeURIComponent(arg) : '');
 INIT.errors = () => filterErrors();
 document.addEventListener('input', e => { if (e.target.id === 'errSearch') filterErrors(); });
 
-I.start = () => `<h1>API overview</h1>
+I.start = () => {
+  const op = (href, rt, name, what) => `<a class="op-card" href="${href}"><span class="method post">POST</span><span class="op-n"><b>${name}</b><code>${rt}</code></span><span class="op-w">${what}</span></a>`;
+  const step = (n, href, t, d) => `<a class="seq" href="${href}"><span class="seq-n">${n}</span><span><b>${t}</b><small>${d}</small></span></a>`;
+  return `<h1>API overview</h1>
 <p class="lead">One endpoint for everything you do in code: send payouts, check your balance and a transaction's status, and pull your transactions for reconciliation. Every transaction also gets a callback.</p>
+<div class="ep2"><span class="method post">POST</span><code>${API_URL}</code><button type="button" class="ep2-copy" data-copy-text="${API_URL}" aria-label="Copy endpoint">Copy</button></div>
+<div class="ep2-h"><span>Headers</span> <code>Content-Type: application/json</code> <code>api-version: 2.0</code> <span>· the operation is chosen by <code>requestType</code> in the body</span></div>
+${callout('<p><b>What is live for you.</b> This reference mirrors the full live API docs at document.payfuture.net, including methods and countries that may not be enabled on your MID. India payouts are live today; see <a href="#/corridors">Corridors</a>, and ask your Payfuture contact before you build anything else.</p>', 'warn')}
+<h2>Build in this order</h2>
+<div class="seqs">
+  ${step(1, '#/api/onboarding', 'Before you start', 'MID and secret, IP whitelisting, callback URL')}
+  ${step(2, '#/api/signing', 'Signing', 'Body hash or signature header')}
+  ${step(3, '#/api/hashes', 'Hash generation', 'The recipe for each request')}
+  ${step(4, '#/api/callbacks', 'Callbacks', 'What we send to your notificationUrl')}
+  ${step(5, '#/api/payout', 'Payout', 'Your first request')}
+  ${step(6, '#/api/op-get-status', 'Get Status and Get Balance', 'Check results and funds')}
+</div>
+<h2>Operations</h2>
+<p>Every call is <code>POST</code> to the same URL. The <code>requestType</code> picks the operation:</p>
+<div class="op-cards">
+  ${op('#/api/payout', 'PAYOUT', 'Payout', 'Send money to a bank account or wallet.')}
+  ${op('#/api/payin', 'PAYIN', 'Payin', 'Collect a payment.')}
+  ${op('#/api/refund', 'REFUND', 'Refund', 'Refund an approved pay-in.')}
+  ${op('#/api/balance', 'GetBalance', 'Get Balance', 'Your available balance.')}
+  ${op('#/api/op-get-status', 'GetStatus', 'Get Status', 'The status of one transaction.')}
+  ${op('#/api/op-get-transaction-list', 'GetTransactionList', 'Get Transaction List', 'Your transactions, for reconciliation.')}
+</div>
+<h2>Environments</h2>
 ${table(['Environment', 'URL'], [
   ['Production', `<code>${API_URL}</code>`],
   ['Sandbox', 'None. You test on a limited live MID (see <a href="#/guide/go-live">Test & go live</a>)'],
 ])}
-<p>Every call is <code>POST</code> to the same URL, with <code>Content-Type: application/json</code> and the header <code>api-version: 2.0</code>. The operation is chosen by <code>requestType</code>:</p>
-${table(['requestType', 'What it does'], [
-  ['<code>PAYOUT</code>', 'Send money to a bank account or wallet. <a href="#/api/payout">Payout</a>'],
-  ['<code>PAYIN</code>', 'Collect a payment. <a href="#/api/payin">Payin</a>'],
-  ['<code>REFUND</code>', 'Refund an approved pay-in. <a href="#/api/refund">Refund</a>'],
-  ['<code>GetBalance</code>', 'Your available balance. <a href="#/api/balance">Get Balance</a>'],
-  ['<code>GetStatus</code>', 'The status of one transaction. <a href="#/api/op-get-status">Get Status</a>'],
-  ['<code>GetTransactionList</code>', 'Your transactions, for reconciliation. <a href="#/api/op-get-transaction-list">Get Transaction List</a>'],
-])}
-${callout('<p><b>What is live for you.</b> This reference mirrors the full live API docs at document.payfuture.net, including methods and countries that may not be enabled on your MID. India payouts are live today; see <a href="#/corridors">Corridors</a>, and ask your Payfuture contact before you build anything else.</p>', 'warn')}
+<h2>Request and response shape</h2>
 ${code(`{
   "requestType": "PAYOUT",
   "data": { "midCode": "<your MID>", "...": "..." }
 }`)}
 ${callout('<p><b>The API always answers HTTP 200</b>, even for errors. Read <code>success</code> and <code>error[]</code> in the body. The only exception is HTTP 403 when your server IP is not whitelisted.</p>')}
 ${src(['document.payfuture.net', API_DOCS])}`;
+};
 
 I.onboarding = () => `<h1>Before you start</h1>
 <p class="lead">You need four things from onboarding before your first call.</p>

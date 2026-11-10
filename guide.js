@@ -1,5 +1,5 @@
 /* Integration guide (#/guide/...): learn, build, go live. Guide-first, modelled on Airwallex and Razorpay.
-   Scope: India payouts (live). Pakistan is coming soon (Confluence PMA 1979875329), so it only appears as a
+   Scope: India payouts (live). Pakistan: API ready, testing in progress (Confluence PMA 1979875329: coming soon); its API is on #/corridors/pk. Otherwise it only appears as a
    "coming soon" card. Facts come from document.payfuture.net (API), Confluence (live scope, limits) and the
    product offering page (funding currencies, proof of payment). Anything unconfirmed is left out. */
 
@@ -23,36 +23,59 @@ NAV.guide = [
 
 /* ================= HOME (#/) ================= */
 function home() {
+  const ql = (href, t, d) => `<a class="ql" href="${href}"><b>${t}</b><span>${d}</span></a>`;
   return `<section class="ent-hero">
   <div class="ent-hero-in">
-    <span class="kicker">Payfuture Cross-border Payouts · Developer docs</span>
-    <h1>Fund in USDT, USD or EUR. <em>Pay out in India.</em></h1>
-    <p>Fund your Payfuture balance once, and pay individuals and businesses in India, payout by payout, through one API. Everything you need to understand, build and launch is here.</p>
-    <div class="hero-ctas"><a class="btn btn-yellow" href="#/guide/welcome">Start the guide</a><a class="btn btn-ghost" href="#/api/start">API reference</a></div>
-    <button class="home-search" type="button" data-search=""><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Search guides, API fields and error codes</span><kbd>/</kbd></button>
-  </div>
-  <div class="ent-hero-art" aria-hidden="true">
-    <div class="coin c1">USDT</div><div class="coin c2">USD</div><div class="coin c3">EUR</div>
-    <div class="beam"></div>
-    <div class="dest d1">₹ INR</div>
+    <div class="hero-txt">
+      <span class="kicker">Payfuture Cross-border Payouts · Developer docs</span>
+      <h1>Fund in USDT, USD or EUR. <em>Pay out locally.</em></h1>
+      <p>Fund your Payfuture balance once, and pay individuals and businesses in their local currency, payout by payout, through one API. Everything you need to understand, build and launch is here.</p>
+      <div class="hero-ctas"><a class="btn btn-yellow" href="#/guide/welcome">Start the guide</a><a class="btn btn-ghost" href="#/api/start">API reference</a></div>
+
+      <ul class="hero-facts"><li>One API for payouts, status, balance and reconciliation</li><li>A callback with the final status of every payout</li><li>Every error code explained, with how to fix it</li></ul>
+    </div>
+    <div class="hero-flow" aria-label="How a payout flows">
+      <span class="hero-flow-t">How a payout flows</span>
+      <ol>
+        <li><span class="hf-n">1</span><div><b>You fund your balance</b><small>USDT, USD or EUR</small></div></li>
+        <li><span class="hf-n">2</span><div><b>Converted to local currency</b><small>Your balance is ready to pay out</small></div></li>
+        <li><span class="hf-n">3</span><div><b>You send a payout</b><small>One API call per beneficiary</small></div></li>
+        <li class="done"><span class="hf-n">✓</span><div><b>Beneficiary is paid</b><small>To a bank account or wallet · result in the callback</small></div></li>
+      </ol>
+    </div>
   </div>
 </section>
-<div class="home-ent">
-  <div class="grid3 path">
-    <a class="tile" href="#/guide/how-it-works"><span class="tag">1 · Understand</span><b>How a payout works</b><span>Watch a payout travel from your request to the beneficiary's bank.</span></a>
-    <a class="tile" href="#/guide/quickstart"><span class="tag">2 · Build</span><b>Send your first payout</b><span>Five steps from balance check to a confirmed payout.</span></a>
-    <a class="tile" href="#/guide/checklist"><span class="tag">3 · Go live</span><b>Go-live checklist</b><span>Tick off everything before Payfuture raises your limits.</span></a>
-  </div>
-  <h2>Corridors</h2>
-  <div class="cards inline">
-    <a class="card enterprise" href="#/corridors"><span class="pill">Live</span><h2>🇮🇳 India</h2><p>Fund in USDT, USD or EUR and pay out INR to bank accounts over IMPS. ${IN_LIMITS}.</p><div class="go">See the India corridor →</div></a>
-    <div class="card soon"><span class="pill">Coming soon</span><h2>🇵🇰 Pakistan</h2><p>PKR payouts are on the way. Ask your Payfuture contact for timing.</p></div>
-  </div>
-  <div class="grid3 stats-row">
-    <div class="tile"><span class="stat">24x7</span><span>real-time IMPS payouts in India</span></div>
-    <div class="tile"><span class="stat">UTR</span><span>bank reference in every paid callback</span></div>
-    <div class="tile"><span class="stat">${D[F].errors.length}</span><span>error codes, searchable</span></div>
-  </div>
+<div class="home-ent home-wide">
+  <section class="home-row">
+    <div class="home-col">
+      <h2>Start here</h2>
+      <div class="path-list">
+        <a class="tile" href="#/guide/how-it-works"><span class="tag">1 · Understand</span><b>How a payout works</b><span>Watch a payout travel from your request to the beneficiary's bank.</span></a>
+        <a class="tile" href="#/guide/quickstart"><span class="tag">2 · Build</span><b>Send your first payout</b><span>Five steps from balance check to a confirmed payout.</span></a>
+        <a class="tile" href="#/guide/checklist"><span class="tag">3 · Go live</span><b>Go-live checklist</b><span>Tick off everything before Payfuture raises your limits.</span></a>
+      </div>
+    </div>
+    <div class="home-col">
+      <h2>Corridors</h2>
+      <div class="cards cor-cards">
+        <a class="card enterprise" href="#/corridors/in"><span class="pill">Live</span><h2>🇮🇳 India</h2><p>Fund in USDT, USD or EUR and pay out INR to bank accounts over IMPS. ${IN_LIMITS}.</p><div class="go">See the India corridor →</div></a>
+        <a class="card soon" href="#/corridors/pk"><span class="pill">API ready · testing</span><h2>🇵🇰 Pakistan</h2><p>Pay out PKR to bank accounts (IBAN) and Easypaisa or JazzCash wallets. The API is ready to build against; Pakistan goes live once testing is complete.</p><div class="go">See the Pakistan API →</div></a>
+      </div>
+    </div>
+  </section>
+  <section>
+    <h2>Jump into the API reference</h2>
+    <div class="ql-grid">
+      ${ql('#/api/payout', 'Payout', 'Send money to a bank account or wallet')}
+      ${ql('#/api/hashes', 'Hash generation', 'The recipe for every request')}
+      ${ql('#/api/callbacks', 'Callbacks', 'What we send to your notificationUrl')}
+      ${ql('#/api/op-get-status', 'Get Status', 'Check one transaction')}
+      ${ql('#/api/balance', 'Get Balance', 'Your available balance')}
+      ${ql('#/api/errors', 'Error codes', `All ${D[F].errors.length}, each with how to fix it`)}
+      ${ql('#/playground', 'Hash playground', 'Find out why a hash does not match')}
+      ${ql('#/api/op-get-transaction-list', 'Get Transaction List', 'Reconcile in bulk')}
+    </div>
+  </section>
   <section class="home-help">
     <div><h2>Need help?</h2><p>Reach out to us on your integration channel, on the platform agreed at onboarding. Your integration contact there handles credentials, IP whitelisting, funding instructions and limits.</p></div>
     <a class="btn btn-yellow" href="#/guide/support">What to include</a>
@@ -285,7 +308,7 @@ GD.faq = () => {
   const q = (t, a) => `<details class="faq"><summary>${t}</summary>${a}</details>`;
   return `<h1>FAQ</h1>
 ${q('Can I use my Payfuture Gateway (paygate10.com) MID here?', '<p>No. Cross-border Payouts uses its own host, MIDs and secrets.</p>')}
-${q('Which countries can I pay out to?', '<p>India today. Pakistan is coming soon; see <a href="#/corridors">Corridors</a>.</p>')}
+${q('Which countries can I pay out to?', '<p>India today. For Pakistan the API is ready, so you can build your integration now; it goes live once Payfuture completes testing. See <a href="#/corridors/pk">Pakistan</a>.</p>')}
 ${q('Is there a sandbox?', '<p>No. You test on a limited live MID with low limits and a small top-up. See <a href="#/guide/go-live">Test & go live</a>.</p>')}
 ${q('Why do I get HTTP 403?', '<p>Your server IP is not whitelisted. Send Payfuture the IP.</p>')}
 ${q('My hash doesn\'t match. Help!', '<p>Paste it into the <a href="#/playground">hash detective</a>. Nine times out of ten it is amount format, secret case or field order.</p>')}
