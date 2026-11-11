@@ -382,3 +382,5 @@ nav.side .sg a{margin-left:4px}
 .hero-facts li::before{content:"✓";flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--brand-yellow);color:var(--brand-navy);font:700 12px var(--font-head)}
 .glance dl{grid-template-columns:minmax(110px,max-content) minmax(0,1fr)}
 .glance dd{line-height:1.5}
+/* Need help: one-line call to action, label centred */
+.home-help .help-cta{display:inline-flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap;flex:none;min-width:170px}

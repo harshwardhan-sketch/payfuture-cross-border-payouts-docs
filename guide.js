@@ -78,7 +78,7 @@ function home() {
   </section>
   <section class="home-help">
     <div><h2>Need help?</h2><p>Reach out to us on your integration channel, on the platform agreed at onboarding. Your integration contact there handles credentials, IP whitelisting, funding instructions and limits.</p></div>
-    <a class="btn btn-yellow" href="#/guide/support">What to include</a>
+    <a class="btn btn-yellow help-cta" href="#/guide/support">Contact Support</a>
   </section>
   <footer class="home-foot">
     <img src="assets/logo.svg" alt="Payfuture">
