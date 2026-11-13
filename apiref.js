@@ -52,10 +52,10 @@ function renderBlocks(flow, blocks) {
       case 'table': return renderTable(b);
       case 'pre': {
         const f = strip(b.html).trim();
-        if (/^X-Callback-Signature:/i.test(f)) return `<div class="formula"><span>${esc(f)}</span><a href="#/api/signing/hmac">Try it →</a></div>`;
+        if (/^X-Callback-Signature:/i.test(f)) return `<div class="formula"><span>${esc(f)}</span><a href="#/playground/hmac">Try it →</a></div>`;
         if (/^SHA256\(/i.test(f)) {
           const idx = D[flow].recipes.findIndex(r => r.formula === f);
-          return `<div class="formula"><span>${esc(f)}</span>${idx >= 0 ? `<a href="#/api/signing/${idx}">Try it →</a>` : ''}</div>`;
+          return `<div class="formula"><span>${esc(f)}</span>${idx >= 0 ? `<a href="#/playground/${idx}">Try it →</a>` : ''}</div>`;
         }
         return code(strip(b.html), 'text');
       }

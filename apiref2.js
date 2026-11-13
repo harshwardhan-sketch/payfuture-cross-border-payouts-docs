@@ -1,13 +1,13 @@
 /* API reference pages in one layout (left: explanation; right: sticky code), for every operation:
-   Payout, Payin, Refund, Get Balance and the utility calls (Get Status, quotes, verifications, Get Transaction List).
+   Payout, Payin, Get Balance and the utility calls (Get Status, quotes, verifications, Get Transaction List).
    - left: title, endpoint bar, a country + method picker (requests with several methods),
      one parameter card with Request / Response buttons; nested objects fold under their parent,
      paymMethodFields follows the picked method, hash shows the picked recipe;
    - right: Request panel (cURL, Node.js, Python, PHP, JSON) and Response panel (success / error), with line numbers.
-   Hash recipes and callbacks are not repeated per operation: they have their own pages (Hash generation, Callbacks),
+   Hash recipes and callbacks are not repeated per operation: they have their own pages (Signing & hashes, Callbacks),
    placed before the requests in the menu because a request needs both.
-   Content comes only from the live API docs (api-data.js). A picked method is kept in the URL (#/api/payout/<method>).
-   Uses helpers from app.js and apiref.js (esc, hl, norm, strip, pretty, page, fixLinks, renderBlocks, steps). */
+   Content comes only from the live API docs (api-data.js, document.payfuture.net). A picked method is kept in the URL (#/api/payout/<method>).
+   Uses helpers from app.js (esc, hl, norm, strip, pretty, page, fixLinks, renderBlocks, steps). */
 const API2 = (() => {
   const STOP = new Set(['for', 'and', 'seamless', 'hosted', 'the', 'object']);
   const toks = s => new Set(norm(s).split(' ').filter(w => w && !STOP.has(w)));
@@ -29,7 +29,7 @@ const API2 = (() => {
     const [ti, li, mi, di] = [at(/type/), at(/length/), at(/mandatory|required/), at(/description/)];
     const m = strip(r[mi] || '').trim();
     return {name: strip(r[0]).trim(), type: strip(r[ti] || ''), len: strip(r[li] || ''), req: /^yes/i.test(m) ? 'yes' : /^conditional/i.test(m) ? 'cond' : 'no',
-      cond: /^conditional/i.test(m) ? m.replace(/^conditional\s*/i, '') : '', desc: fixLinks(r[di] || '')};
+      cond: /^conditional/i.test(m) ? m.replace(/^conditional\s*/i, '').replace(/find mandatory\s*\/\s*optional in example request\.?/i, '').trim() : '', desc: fixLinks(r[di] || '')};
   };
   function tablesIn(blocks) {
     const out = []; let title = '';
@@ -108,24 +108,107 @@ const API2 = (() => {
     signature: ' <span class="hashSlot"></span>', /* Get Transaction List signs with a "signature" field */
   };
   const baseName = t => norm(t).replace(/^nested object /, '').replace(/ object( parameters| structure)?$/, '').replace(/ .*$/, '');
-  function prm(r, kids = '', open = false, idp = '', extra = false) {
-    const meta = [r.type, r.len && !/^(-|n\/a)$/i.test(r.len) ? r.len : ''].filter(Boolean);
-    const star = r.req === 'yes' ? '<span class="prm-star" title="Required">*</span>' : '';
-    const tag = r.req === 'yes' ? '<span class="prm-req yes">Required</span>' : r.req === 'cond' ? '<span class="prm-req cond">Conditional</span>' : '<span class="prm-req no">Optional</span>';
-    return `<div class="prm"${idp ? ` id="${idp}${slug(r.name)}"` : ''}><div class="prm-h"><code class="prm-n">${esc(r.name)}</code>${star}${meta.map(m => `<span class="prm-t">${esc(m)}</span>`).join('')}${tag}</div>
-      <div class="prm-d">${r.desc || ''}${extra && EXTRA[r.name] ? EXTRA[r.name] : ''}${r.cond ? `<span class="prm-cond">${esc(r.cond)}</span>` : ''}</div>${kids ? `<details class="prm-kids"${open ? ' open' : ''}><summary>Child parameters</summary>${kids}</details>` : ''}</div>`;
+  /* ---------- per-country status of a field (fieldrules.js) ---------- */
+  const ruleOf = (S, o) => (o && typeof FIELD_RULES !== 'undefined' && FIELD_RULES[`${S.key}|${o.country}|${o.hosted ? 'H' : o.method}`]) || null;
+  const lc = s => String(s).toLowerCase();
+  /* value at a data path in the picked example, ignoring key case (some examples use MidCode, UserInfo, ...) */
+  const valAt = (obj, path) => path.split('.').reduce((v, k) => v && typeof v === 'object' ? v[Object.keys(v).find(x => lc(x) === lc(k))] : undefined, obj);
+  function statusOf(R, path) {
+    if (!R || !path) return null;
+    const p = lc(path), par = p.includes('.') ? p.slice(0, p.lastIndexOf('.')) : '', leaf = p.slice(p.lastIndexOf('.') + 1);
+    const M = R.mandatory.find(([f]) => lc(f) === p); if (M) return {st: 'yes', hint: M[1]};
+    const D = R.dummy.find(([f]) => lc(f) === p);
+    if (D) return typeof D[1] === 'object' ? {st: 'yes'} : {st: 'dummy', value: D[1], hint: D[2] || ''};
+    const DP = R.dummy.find(([f, v]) => lc(f) === par && typeof v === 'object');
+    if (DP) { const k = Object.keys(DP[1]).find(x => lc(x) === leaf); if (k !== undefined) return {st: 'dummy', value: DP[1][k], hint: DP[2] || ''}; }
+    if (R.optional.some(f => lc(f) === p)) return {st: 'no'};
+    if (R.optional.some(f => p.startsWith(lc(f) + '.'))) return {st: 'no'};
+    if (par && R.optional.some(f => lc(f) === par + '.*')) return {st: 'no'};
+    if (R.mandatory.some(([f]) => p.startsWith(lc(f) + '.')) || R.dummy.some(([f]) => p.startsWith(lc(f) + '.'))) return {st: 'yes'};
+    if (R.mandatory.some(([f]) => lc(f).startsWith(p + '.')) || R.dummy.some(([f]) => lc(f).startsWith(p + '.'))) return {st: 'yes'};
+    return null;
   }
-  function prmList(rows, nested, opts = {}) {
+  const show = v => typeof v === 'string' ? `"${v}"` : JSON.stringify(v);
+  /* examples for fields every request shares, used when the docs example has none or only a test value */
+  const GEN = {midCode: 'MID123', merchantRefNo: 'PO-10001', amount: 1500.00, hash: 'd824966e68287e417103830f4c0795cd21b09b6c6827da21550b912fdd343007', notificationUrl: 'https://yourcompany.example/payfuture/callback',
+    returnUrl: 'https://yourcompany.example/payments/done', customField1: 'order-77', customField2: '', customField3: '', customField4: '', customField5: '', user_category: 'Default', device_fingerprint: 'a1b2c3d4e5f6',
+    bank_branch: 'Andheri East', bank_address: '12 MG Road, Mumbai', merchant_ref_no: 'PO-10001', address: '12 MG Road', iscompeleted: true,
+    /* businessTransaction (India, businessCategory "Import&Export"): values from the live docs example */
+    businessType: 'Electronics', originCountry: 'INDIA', userIdNumber: 'ID9876543210', userDob: '1990-07-15', userBirthplace: 'Mumbai', shippingNumber: 'AWB1234567890',
+    shippingDate: '2025-08-15', hsnCode: '847130', codeOfPurpose: 'P0101', loadingPort: 'Mumbai', userCountry: 'IN', exportTxnCurrency: 'USD', exportTxnAmount: 1250.75};
+  function prm(r, kids = '', open = false, idp = '', extra = false, ctx = null, path = '') {
+    const meta = [r.type, r.len && !/^(-|n\/a)$/i.test(r.len) ? r.len : ''].filter(Boolean);
+    let st = ctx && statusOf(ctx.R, path);
+    /* no "Conditional" once a country is picked: resolve the docs' condition for this country and method */
+    if (ctx && !st && path && r.req === 'cond') {
+      const c = lc(r.cond), inEx = valAt(ctx.data, path) !== undefined;
+      /* India-only fields: for any other country they are simply not needed, and the India note is not shown */
+      if (/india/.test(c)) st = ctx.country === 'India' ? {st: inEx ? 'yes' : 'no'} : {st: 'no', notHere: true, hint: `Not needed for ${ctx.country || 'this method'}.`};
+      else if (/import/.test(c)) st = {st: 'no', hint: 'Only when businessCategory is "Import&Export".'};
+      else if (/integrationtype|seamless/.test(c)) st = {st: ctx.hosted ? 'no' : 'yes'};
+      else if (/hosted/.test(c)) st = {st: ctx.hosted || /^(BT|BD)$/i.test(ctx.method || '') ? 'yes' : 'no'};
+      else st = {st: inEx ? 'yes' : 'no'};
+      st.auto = true;
+    }
+    const req = st ? st.st : r.req;
+    const star = req === 'yes' || req === 'dummy' ? '<span class="prm-star" title="Required">*</span>' : '';
+    /* the body hash is not needed when the request is signed with the X-Callback-Signature header */
+    const sigAlt = idp === 'p-' && /^hash$/i.test(path);
+    const tag = sigAlt ? '<span class="prm-req sig">Required unless signed with the header</span>' : req === 'dummy' ? '<span class="prm-req dummy">Required · dummy OK</span>' : req === 'yes' ? '<span class="prm-req yes">Required</span>' : req === 'cond' ? '<span class="prm-req cond">Conditional</span>' : '<span class="prm-req no">Optional</span>';
+    /* the example for the picked country: the dummy value where one is fine, otherwise the value in that country's example request */
+    let ex = '';
+    if (ctx && path) {
+      const leaf0 = path.slice(path.lastIndexOf('.') + 1), E0 = typeof FIELD_EXAMPLES !== 'undefined' && FIELD_EXAMPLES[ctx.country];
+      const k0 = E0 && (/^(userInfo|paymMethodFields)\./i.test(path) || (/^customField\./i.test(path) && st && st.st === 'yes')) && Object.keys(E0).find(k => lc(k) === lc(leaf0));
+      /* the country example beats the old docs example (which often holds "test" values) */
+      const test = x => x === undefined || x === null || /^(test|x+|1{4,}|n\/a|string)$|test@|@test\./i.test(String(x));
+      const g = Object.keys(GEN).find(k => lc(k) === lc(leaf0));
+      const COMMON = /^(midCode|merchantRefNo|amount|hash|merchantUrl\.notificationUrl|merchantUrl\.returnUrl)$/i;
+      let v = st && st.st === 'dummy' ? st.value : k0 ? E0[k0] : COMMON.test(path) && g ? GEN[g] : valAt(ctx.data, path);
+      if (test(v) && g) v = GEN[g];
+      /* integrationType and paymentMethod follow the picked method */
+      if (test(v) && /^integrationType$/i.test(path)) v = ctx.hosted ? 'PG_H' : 'S';
+      if (test(v) && /^paymentMethod$/i.test(path) && ctx.method) v = ctx.method;
+      const where = esc(ctx.country || 'this method');
+      /* is this value specific to the country? (country rules and formats yes; URLs, IDs, amounts, riskData no) */
+      const perCountry = () => !!ctx.country && (!!k0 || (!!st && !st.auto && !/^(riskData|merchantUrl)\./i.test(path)) || /^(currency|country|paymentMethod)$/i.test(path));
+      const lbl = () => perCountry() ? `Example for ${where}` : 'Example';
+      const real = st && st.hint && /real|customer's|beneficiary|holder/i.test(st.hint);
+      const fixed = st && st.hint && /^"[^"]+"/.test(st.hint) ? st.hint.match(/^"[^"]+"/)[0] : '';
+      if (st && st.notHere) ex = `<div class="prm-ex"><span>${esc(st.hint)}</span></div>`;
+      else if (st && st.st === 'dummy') ex = `<div class="prm-ex dummy"><b>Pass dummy data.</b> ${lbl()}: <code>${esc(show(v))}</code>${st.hint ? ` <span>${st.hint}</span>` : ''}</div>`;
+      else if (real) {
+        /* a valid-looking value for this country, so the format is clear */
+        const leaf = path.slice(path.lastIndexOf('.') + 1), E = typeof FIELD_EXAMPLES !== 'undefined' && FIELD_EXAMPLES[ctx.country];
+        const fx = E && Object.keys(E).find(k => lc(k) === lc(leaf));
+        ex = `<div class="prm-ex real"><b>Send real data:</b> <span>${esc(st.hint)}.</span> Dummy or test values are declined.${fx ? `<br><b>Valid format for ${where}:</b> <code>${esc(show(E[fx]))}</code>` : ''}</div>`;
+      }
+      else if (fixed) ex = `<div class="prm-ex"><b>${lbl().replace('Example for', 'For')}:</b> <code>${esc(st.hint)}</code></div>`;
+      /* "Example for <country>" only where the value depends on the country; a plain "Example" otherwise */
+      else if (v !== undefined && v !== null && typeof v !== 'object' && !/^(test|x+|1{4,}|n\/a)$|test@|@test\./i.test(String(v))) ex = `<div class="prm-ex"><b>${lbl()}:</b> <code>${esc(/^hash$/i.test(path) && /^[0-9a-f]{64}$/i.test(String(v)) ? `"${String(v).slice(0, 8)}…${String(v).slice(-8)}" (64 hex characters)` : show(v))}</code>${st && st.hint ? ` <span>${esc(st.hint)}</span>` : ''}</div>`;
+      else if (st && st.hint) ex = `<div class="prm-ex"><span>${esc(st.hint)}</span></div>`;
+    }
+    /* ids stay unique when a name appears twice (e.g. merchantRefNo in two response objects) */
+    let pid = idp ? idp + slug(r.name) : '';
+    if (pid && USED.has(pid)) { pid = idp + slug(path || r.name); let n = 2; while (USED.has(pid)) pid = idp + slug(path || r.name) + '-' + n++; }
+    if (pid) USED.add(pid);
+    return `<div class="prm${st ? ' st-' + st.st : ''}"${pid ? ` id="${pid}"` : ''}><div class="prm-h"><code class="prm-n">${esc(r.name)}</code>${star}${meta.map(m => `<span class="prm-t">${esc(m)}</span>`).join('')}${tag}</div>
+      <div class="prm-d">${r.desc || ''}${sigAlt ? ` <span class="prm-cond">Not needed when you sign the whole request with the <code>X-Callback-Signature</code> header instead: see <a href="#/api/signing/hmac">Signing &amp; hashes</a>.</span>` : ''}${extra && EXTRA[r.name] ? EXTRA[r.name] : ''}${r.cond && (!st || (st.auto && !st.notHere)) ? `<span class="prm-cond">${esc(r.cond)}</span>` : ''}</div>${ex}${kids ? `<details class="prm-kids"${open ? ' open' : ''}><summary>Child parameters</summary>${kids}</details>` : ''}</div>`;
+  }
+  function prmList(rows, nested, opts = {}, base = '') {
     return rows.map(r => {
-      if (opts.pmf && /^paymMethodFields$/i.test(r.name)) return prm(r, '<div class="pmfKids"></div>', true, opts.idp, opts.extra);
+      const path = /^(requestType|data)$/i.test(r.name) && !base ? (/^data$/i.test(r.name) ? '' : r.name) : base + r.name;
+      const kidBase = /^data$/i.test(r.name) && !base ? '' : path + '.';
+      if (opts.pmf && /^paymMethodFields$/i.test(r.name)) return prm(r, '<div class="pmfKids"></div>', true, opts.idp, opts.extra, opts.ctx, path);
       /* every nested table for this parameter; several (e.g. txdata per transaction type) get their own sub-heading */
       const ts = nested.filter(n => baseName(n.title) === norm(r.name));
       const rest = nested.filter(n => !ts.includes(n));
-      const kids = ts.length > 1 ? ts.map(t => `<p class="prm-sub">${esc(t.title.replace(/^Nested object\s*/i, ''))}</p>${prmList(t.rows, rest, opts)}`).join('') : ts.length ? prmList(ts[0].rows, rest, opts) : '';
-      return prm(r, kids, !!ts.length && /^data$/i.test(r.name), opts.idp, opts.extra);
+      const kids = ts.length > 1 ? ts.map(t => `<p class="prm-sub">${esc(t.title.replace(/^Nested object\s*/i, ''))}</p>${prmList(t.rows, rest, opts, kidBase)}`).join('') : ts.length ? prmList(ts[0].rows, rest, opts, kidBase) : '';
+      return prm(r, kids, !!ts.length && /^data$/i.test(r.name), opts.idp, opts.extra, opts.ctx, path);
     }).join('');
   }
-  const list = (main, nested, opts) => main ? `<div class="prm-list">${prmList(main.rows, nested, opts)}</div>` : '';
+  let USED = new Set();
+  const list = (main, nested, opts) => { USED = new Set(); return main ? `<div class="prm-list">${prmList(main.rows, nested, opts)}</div>` : ''; };
 
   /* ---------- code panels ---------- */
   /* one block per line (for the line numbers); copying the pane still gives one line per row */
@@ -145,16 +228,31 @@ const API2 = (() => {
       ${panes.map(([, txt], i) => `<pre class="snip-pane${i === on ? ' on' : ''}" data-snip-pane="${i}"><code>${lines(txt)}</code></pre>`).join('')}
     </div>`;
   }
+  /* the docs examples hold "test" values and nulls: swap them for the same sample values the parameter list shows */
+  function polish(raw, o) {
+    const j = json(raw), data = j && (j.data || j.Data); if (!data) return raw;
+    const E0 = (typeof FIELD_EXAMPLES !== 'undefined' && FIELD_EXAMPLES[o.country]) || {};
+    const testy = x => x === null || /^(test|x+|1{4,}|n\/a|string)$|test@|@test\./i.test(String(x));
+    const walk = (obj, base) => Object.keys(obj).forEach(k => {
+      const v = obj[k], p = base + k;
+      if (v && typeof v === 'object' && !Array.isArray(v)) return walk(v, p + '.');
+      if (!testy(v)) return;
+      const inUser = /^(userInfo|paymMethodFields)\./i.test(p), ek = Object.keys(E0).find(x => lc(x) === lc(k)), gk = Object.keys(GEN).find(x => lc(x) === lc(k));
+      if (ek && inUser) obj[k] = E0[ek]; else if (gk && v !== null && !/^hash$/i.test(k)) obj[k] = GEN[gk];
+    });
+    walk(data, '');
+    return JSON.stringify(j);
+  }
   function codeBox(o, all) {
-    const e = o.ex;
+    const e = o.ex, req = polish(e.request, o);
     const head = all && all.length > 1 && !all.some(x => x.country)
       ? `<select class="snip-ex" aria-label="Choose example">${all.map(x => `<option value="${x.id}"${x === o ? ' selected' : ''}>${esc(x.title)}</option>`).join('')}</select>`
       : `<span>${esc(o.title)}</span>`;
     return `<div class="snip-head"><span class="snip-dots" aria-hidden="true"><i></i><i></i><i></i></span>${head}</div>
-      ${panel('Request', Object.entries(SNIP).map(([t, f]) => [t, f(e.request)]), 'req')}
+      ${panel('Request', Object.entries(SNIP).map(([t, f]) => [t, f(req)]), 'req')}
       ${panel('Response', [['Success', pretty(e.response).text], ...(e.failResponse ? [['Error', pretty(e.failResponse).text]] : [])], 'res')}
       ${e.notes ? `<div class="snip-note">${esc(e.notes.replace(/^\(Notes:\s*|\)$/g, ''))}</div>` : ''}
-      <p class="snip-foot">Example from the live API docs. Use your own MID, values and hash.</p>`;
+      <p class="snip-foot">Example from the live API docs, with sample values. Use your own MID, values and hash.</p>`;
   }
 
   /* ---------- picker: what to send for the picked method ---------- */
@@ -176,18 +274,32 @@ const API2 = (() => {
       o.cc || o.ccy ? ['Country · currency', [o.cc, o.ccy].filter(Boolean).map(v => `<code>${esc(v)}</code>`).join(' · ')] : null,
       ['integrationType', o.hosted ? '<code>"PG_H"</code> hosted: the customer pays on our page' : '<code>"S"</code> seamless: you send the details'],
       o.method ? ['paymentMethod', `<code>"${esc(o.method)}"</code>`] : null,
-      ['Always send', always.map(link).join(' ')],
-      extra.length ? ['Also send', extra.map(link).join(' ')] : null,
+
       pmf.length ? ['paymMethodFields', pmf.map(r => `<span class="pmf-i"><code>${esc(r.name)}</code>${r.req === 'yes' ? '' : '<small>optional</small>'}</span>`).join(' ')] : o.hosted ? ['paymMethodFields', 'Not needed'] : null,
     ].filter(Boolean);
-    return `<div class="send-card"><div class="send-h"><b>${FLAG[o.country] || ''} ${esc(o.hosted ? 'Hosted' : 'Seamless')} · ${esc(o.name)}</b>${status ? `<span class="pk-st ${status}">${STATUS_TXT[status]}</span>` : ''}</div>
+    const head = `<div class="send-h"><b>${FLAG[o.country] || ''} ${esc(o.hosted ? 'Hosted' : 'Seamless')} · ${esc(o.name)}</b>${status ? `<span class="pk-st ${status}">${STATUS_TXT[status]}</span>` : ''}</div>`;
+    const rule = typeof FIELD_RULES !== 'undefined' && FIELD_RULES[`${S.key}|${o.country}|${o.hosted ? 'H' : o.method}`];
+    if (rule) return `<div class="send-card">${head}${ruleCard(S, o, rule)}</div>`;
+    return `<div class="send-card">${head}
       <dl class="send-spec">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl></div>`;
   }
-  function pmfKids(o) {
-    if (!o.fields) return `<p class="prm-empty">${o.hosted ? 'Not needed for hosted checkout.' : 'No extra fields for this method.'}</p>`;
-    return `<p class="prm-for">Fields for <b>${esc(o.name)}${o.country ? ` (${esc(o.country)})` : ''}</b>. Pick another method above to see its fields.</p>` + o.fields.rows.map(r => prm(r, '', false, 'p-')).join('');
+  /* short summary above the parameters; the per-field rules are in the parameter list itself */
+  function ruleCard(S, o, R) {
+    const pm = (R.mandatory.find(([f]) => f === 'paymentMethod') || [])[1];
+    const rows = [
+      o.cc || o.ccy ? ['Country · currency', [o.cc, o.ccy].filter(Boolean).map(v => `<code>${esc(v)}</code>`).join(' · ')] : null,
+      ['integrationType', o.hosted ? '<code>"PG_H"</code> hosted: the customer pays on our page' : '<code>"S"</code> seamless: you send the details'],
+      pm ? ['paymentMethod', esc(pm).replace(/&quot;([^&]+)&quot;/g, '<code>"$1"</code>')] : null,
+      R.dummy.length ? ['Dummy data', `${R.dummy.length} field${R.dummy.length > 1 ? 's' : ''} can take dummy values: see <a href="#" data-jump="params">Parameters</a>`] : null,
+    ].filter(Boolean);
+    return `<dl class="send-spec">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+      ${R.notes.length ? `<div class="rc-notes2"><b>Good to know</b><ul>${R.notes.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}`;
   }
-  const hashLink = S => `#/api/hashes/${/^op-|^balance$/.test(S.key) ? 'utilities' : S.key}`;
+  function pmfKids(o, ctx = null) {
+    if (!o.fields) return `<p class="prm-empty">${o.hosted ? 'Not needed for hosted checkout.' : 'No extra fields for this method.'}</p>`;
+    return `<p class="prm-for">Fields for <b>${esc(o.name)}${o.country ? ` (${esc(o.country)})` : ''}</b>. Pick another method above to see its fields.</p>` + o.fields.rows.map(r => prm(r, '', false, 'p-', false, ctx, 'paymMethodFields.' + r.name)).join('');
+  }
+  const hashLink = S => `#/api/signing/${/^op-|^balance$/.test(S.key) ? 'utilities' : S.key}`;
   const hashSlot = (S, o) => {
     const r = (o && o.recipe) || S.recipe;
     return r ? `<span class="hash-for">Recipe${S.picker ? ' for this method' : ''}: <code class="hash-f">${esc(r.formula)}</code> <a class="prm-link" href="${hashLink(S)}">All hash recipes →</a></span>` : `<a class="prm-link" href="${hashLink(S)}">How to build it →</a>`;
@@ -219,7 +331,7 @@ const API2 = (() => {
         <div class="api2-body">
           <section class="pcard" id="params">
             <div class="pcard-top"><h2>Parameters</h2><div class="ptabs" role="tablist"><button type="button" role="tab" class="on" aria-selected="true" data-ptab="req">Request</button><button type="button" role="tab" aria-selected="false" data-ptab="res">Response</button></div></div>
-            <div class="ppane on" data-ppane="req"><p class="pnote">A JSON body with <code>requestType</code> and a <code>data</code> object. Fields marked <span class="prm-star">*</span> are required.</p>${list(S.req, S.reqNested, {pmf: S.picker, idp: 'p-', extra: true})}</div>
+            <div class="ppane on" data-ppane="req"><p class="pnote">A JSON body with <code>requestType</code> and a <code>data</code> object. Fields marked <span class="prm-star">*</span> are required.${S.picker ? ' Required / optional and the examples follow the country and method you pick above.' : ''}</p><div class="reqList">${list(S.req, S.reqNested, {pmf: S.picker, idp: 'p-', extra: true})}</div></div>
             <div class="ppane" data-ppane="res"><p class="pnote">Every response is HTTP 200: check <code>success</code> and <code>error[]</code>.${S.picker ? ' The final result arrives in the <a href="#/api/callbacks">callback</a>.' : ''}</p>${list(S.res, S.resNested, {idp: 'r-'})}</div>
           </section>
           ${S.notes.length ? `<section id="notes" class="op-notes"><h2>Notes</h2>${renderBlocks(flow, S.notes)}</section>` : ''}
@@ -237,7 +349,10 @@ const API2 = (() => {
       root.querySelectorAll('[data-pk-c]').forEach(b => b.classList.toggle('on', b.dataset.pkC === o.country));
       if (q('.pk-m')) q('.pk-m').innerHTML = S.opts.filter(x => x.country === o.country).map(x => `<button type="button" class="chip${x === o ? ' on' : ''}" data-pk-m="${x.id}">${esc(x.hosted ? 'Hosted' : 'Seamless')} · ${esc(x.name)}</button>`).join('');
       if (q('.sendCard')) q('.sendCard').innerHTML = sendCard(S, o);
-      if (q('.pmfKids')) q('.pmfKids').innerHTML = pmfKids(o);
+      const R = ruleOf(S, o);
+      const ctx = {R, data: dataOf(o.ex.request), country: o.country, hosted: o.hosted, method: o.method};
+      if (q('.reqList')) { const open = [...q('.reqList').querySelectorAll('details')].map(d => d.open); q('.reqList').innerHTML = list(S.req, S.reqNested, {pmf: S.picker, idp: 'p-', extra: true, ctx}); q('.reqList').querySelectorAll('details').forEach((d, i) => { if (open[i] !== undefined) d.open = open[i]; }); }
+      if (q('.pmfKids')) q('.pmfKids').innerHTML = pmfKids(o, ctx);
       if (q('.codeBox')) q('.codeBox').innerHTML = codeBox(o, S.opts);
     }
     root.querySelectorAll('.hashSlot').forEach(h => h.innerHTML = hashSlot(S, o));
@@ -304,39 +419,111 @@ $hash = pf_hash([
     ${panel('Code', panes, 'side')}${note ? `<p class="snip-foot">${note}</p>` : ''}</div></aside>`;
   const twoCol = (head, body, aside) => `<div class="api2"><div class="api2-left"><div class="api2-head">${head}</div>${aside}<div class="api2-body">${body}</div></div></div>`;
 
-  /* ---------- Hash generation page ---------- */
-  function hashesPage(flow) {
-    const keys = ['payout', 'payin', 'refund'];
-    const row = (title, f) => { const idx = D[flow].recipes.findIndex(x => x.formula === f);
-      return `<div class="hrow"><span class="hrow-t">${esc(title)}</span><div class="formula"><span>${esc(f)}</span>${idx >= 0 ? `<a href="#/api/signing/${idx}">Try it →</a>` : ''}</div></div>`; };
-    const block = key => {
-      const d = page(flow, pageKey[key]), hs = (sec(d, 'hash-generation') || {blocks: []}).blocks, rs = recipesOf(d), groups = [...new Set(rs.map(r => r.group))];
-      /* the "not required with the signature header" note is said once at the top of the page, not per request */
-      const paras = hs.filter(b => b.kind === 'p' && !/^Not required when the request is signed/i.test(strip(b.html))).map(b => `<p>${fixLinks(b.html)}</p>`).join('');
-      const ul = hs.filter(b => b.kind === 'ul').map(b => `<ul>${b.items.map(i => `<li>${fixLinks(i)}</li>`).join('')}</ul>`).join('');
-      return `<section id="h-${key}" class="hsec"><h2>${LABEL[key]}</h2>${paras}${groups.map(g => `<h3>${esc(g)}</h3>${rs.filter(r => r.group === g).map(r => row(r.title === g ? 'All requests' : r.title, r.formula)).join('')}`).join('')}${ul}</section>`;
-    };
-    const u = D[flow].recipes.filter(r => r.page === 'balance' || r.page === 'other');
-    const ops = [...new Set(u.map(r => r.label.split(' · ')[0]))];
-    const util = u.length ? `<section id="h-utilities" class="hsec"><h2>Utilities</h2>${ops.map(op => `<h3>${esc(op)}</h3>${u.filter(r => r.label.startsWith(op + ' · ')).map(r => row(r.label.split(' · ').slice(1).join(' · '), r.formula)).join('')}`).join('')}</section>` : '';
-    const rs = sec(page(flow, 'index'), 'request-signature');
-    const sig = rs ? `<section id="request-signature" class="hsec"><h2>Request Signature (signature header)</h2><p>Instead of the body <code>hash</code>, you can sign the whole request body and send the signature in a header. See also <a href="#/api/signing/hmac">Signing &amp; hash calculator</a>.</p>${renderBlocks(flow, rs.blocks)}</section>` : '';
-    const head = `<h1>Hash generation</h1>
-      <p class="lead">Every request carries a SHA-256 <code>hash</code> built from its fields and your MID secret, and every response and callback carries one you should check. Build it before you send the request.</p>
-      <nav class="toc" aria-label="On this page">${keys.map(k => `<a href="#" data-jump="h-${k}">${LABEL[k]}</a>`).join('')}<a href="#" data-jump="h-utilities">Utilities</a><a href="#" data-jump="request-signature">Signature header</a></nav>
-      ${steps([
-        ['Take the fields in the recipe\'s order', 'Use the values exactly as you send them: same amount format, same case.'],
-        ['Join them with ~', 'Callback hashes join the values with no separator.'],
-        ['Add your MID secret in lower case', 'Where the recipe says <code>midsecret</code>.'],
-        ['SHA-256, hex', 'Send the 64-character hex digest in <code>hash</code>. Or sign the whole body with the <a href="#/api/signing/hmac">signature header</a> instead.'],
+  /* ---------- Signing & hashes page (one page: how to sign, the recipes, how to check ours) ----------
+     No calculator here: every "Try it" opens the Hash playground on that recipe. */
+  const HMAC_CODE = {
+    'Node.js': `const crypto = require('crypto');
+
+const body = JSON.stringify(request);               // serialise once
+const signature = crypto.createHmac('sha256', process.env.PF_MID_SECRET.toLowerCase())
+  .update(body, 'utf8').digest('hex');
+
+await fetch(url, { method: 'POST', body,             // send the same string
+  headers: { 'Content-Type': 'application/json', 'api-version': '2.0',
+             'X-Callback-Signature': \`sha256=\${signature}\` } });`,
+    'Python': `import hmac, hashlib, json, os, requests
+
+body = json.dumps(request, separators=(",", ":")).encode("utf-8")
+sig = hmac.new(os.environ["PF_MID_SECRET"].lower().encode(), body, hashlib.sha256).hexdigest()
+requests.post(url, data=body, headers={"Content-Type": "application/json", "api-version": "2.0",
+                                       "X-Callback-Signature": f"sha256={sig}"})`,
+    'PHP': `<?php
+$body = json_encode($request);
+$sig  = hash_hmac('sha256', $body, strtolower($secret));
+// send $body unchanged with header  X-Callback-Signature: sha256=$sig`,
+    'C#': `var body = JsonSerializer.Serialize(request);
+var bodyBytes = Encoding.UTF8.GetBytes(body);
+var signature = Convert.ToHexString(HMACSHA256.HashData(
+    Encoding.UTF8.GetBytes(midsecret.ToLowerInvariant()), bodyBytes)).ToLowerInvariant();
+var content = new ByteArrayContent(bodyBytes);
+content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+content.Headers.Add("X-Callback-Signature", "sha256=" + signature);`,
+  };
+  function signingPage(flow, arg) {
+    const play = '#/playground';
+    const head = `<h1>Signing &amp; hashes</h1>
+      <p class="lead">Every request must prove it comes from you, and every response and callback from us carries a hash you should check. Both use the MID secret you get at onboarding, in lower case.</p>
+      <nav class="toc" aria-label="On this page"><a href="#" data-jump="choose">Choose how to sign</a><a href="#" data-jump="hmac">Option A · Signature header</a><a href="#" data-jump="body-hash">Option B · Body hash</a><a href="#" data-jump="check">Check our hashes</a><a href="#" data-jump="all-recipes">All recipes</a></nav>
+      <section id="choose" class="hsec"><h2>Choose how to sign</h2>
+      <div class="grid2">
+        <a class="tile" href="#" data-jump="hmac"><span class="tag">Option A · one method for all requests</span><b>Signature header</b><span>Sign the whole request body with HMAC-SHA256 and send it in the <code>X-Callback-Signature</code> header. The same code works for every request type.</span></a>
+        <a class="tile" href="#" data-jump="body-hash"><span class="tag">Option B · per request type</span><b>Body hash</b><span>Join specific fields with <code>~</code>, add your secret and send the SHA-256 in the <code>hash</code> field. The fields and their order differ per request, method and country.</span></a>
+      </div>
+      <p class="pick-help"><b>Which one?</b> Option A is simpler: one piece of code for every request. When the header is valid, the body <code>hash</code> is ignored. Whichever you choose, check the hashes on our responses and callbacks (<a href="#" data-jump="check">below</a>).</p></section>`;
+    /* each option: what to do (numbered steps), then the same steps worked through with real values */
+    const optHead = (letter, title, sub) => `<div class="opt-h"><span class="opt-badge">Option ${letter}</span><h2>${title}</h2><p>${sub}</p></div>`;
+    const doSteps = items => `<h3>What you do</h3><ol class="do-steps">${items.map(([t, d]) => `<li><b>${t}</b><span>${d}</span></li>`).join('')}</ol>`;
+    const example = (rows, act = '', foot = false) => `<div class="anat"><div class="anat-bar"><span class="anat-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Worked example</span>${act}</div>
+      ${rows.map(([n, label, val]) => `<div class="ex-row"><span class="anat-n a${n}">${n}</span><div><span class="ex-l">${label}</span><div class="ex-v">${val}</div></div></div>`).join('')}
+      ${foot ? '<p class="ex-foot">Both examples use made-up values. The secret is the Hash playground\'s demo secret, so you can reproduce them there.</p>' : ''}</div>`;
+    const EX_BODY = '{"requestType":"GetBalance","data":{"midCode":"MID123"}}', EX_SIG = '9be56556b3b102b63267d53bcb460e830e80f483bdb81d29d97c50e8b8a4ff03';
+    const EX_HASH = 'd824966e68287e417103830f4c0795cd21b09b6c6827da21550b912fdd343007';
+    const tk = (c, t) => `<span class="${c}">${esc(t)}</span>`, sep = '<span class="t-p">~</span>';
+    const hmac = `<section id="hmac" class="hsec opt">${optHead('A', 'Signature header', 'Sign the whole request body once, and send the signature in a header (the API docs call this the Request Signature). The same code works for every request.')}
+      ${doSteps([
+        ['Turn your request into a JSON string', 'Serialise the body once and keep that exact string. You sign it and you send it, byte for byte.'],
+        ['Sign the string with HMAC-SHA256', 'Use your MID secret <b>in lower case</b> as the key and the string as the message. Take the result as hex.'],
+        ['Add the header', '<code>X-Callback-Signature: sha256=&lt;hex&gt;</code>. The <code>sha256=</code> prefix is recommended.'],
+        ['Send the same string as the body', 'Don\'t re-serialise or pretty-print it after signing: one changed space and the signature no longer matches.'],
       ])}
-      <p class="pick-help">Request hashes are not required when the request is signed with the <code>X-Callback-Signature</code> header; see <a href="#" data-jump="request-signature">Request Signature</a>. Check a value with the <a href="#/api/signing">hash calculator</a>, or find out why one doesn't match in the <a href="#/playground">Hash playground</a>.</p>`;
-    return twoCol(head, keys.map(block).join('') + util + sig, sideCode('Build a request hash', Object.entries(HASH_CODE), 'Build hashes on your server: never put the MID secret in an app or browser.'));
+      ${example([
+        [1, 'Your request body, as a string', `<code>${esc(EX_BODY)}</code>`],
+        [2, 'HMAC-SHA256 with your MID secret (lower case)', `key ${tk('t3', 'demo_secret_42')} → ${tk('t4', EX_SIG)}`],
+        [3, 'The header you add', `<code>X-Callback-Signature: sha256=${EX_SIG}</code>`],
+        [4, 'The body you send', `<code>${esc(EX_BODY)}</code> <span class="t-p">(unchanged)</span>`],
+      ], `<a class="anat-try" href="${play}/hmac">Try it →</a>`)}
+      <h3>What we do with it</h3>
+      <ul class="opt-rules">
+      <li>Header valid: the request goes through, and the <code>hash</code> field in the body is ignored, so you can leave it out.</li>
+      <li>Header sent but wrong: the request fails with <a href="#/api/errors/11031"><code>11031</code> hash does not match</a>, even if the body <code>hash</code> is right.</li>
+      <li>No header: we check the body hash (Option B) instead.</li>
+      </ul></section>`;
+    const body = `<section id="body-hash" class="hsec opt">${optHead('B', 'Body hash', 'Build a hash from a few fields of the request plus your secret, and send it in the <code>hash</code> field. Each request, method and country has its own recipe.')}
+      ${doSteps([
+        ['Find the recipe for your request', 'Use the finder below: request type, integration, country and method. The recipe lists the fields and their order.'],
+        ['Put the values in that order, joined with ~', 'Use the values exactly as you send them: same case, amounts with two decimals like <code>100.00</code>. Put your MID secret <b>in lower case</b> where the recipe says <code>midsecret</code> (it is not always last).'],
+        ['Take the SHA-256 of that string, as hex', 'You get 64 characters.'],
+        ['Send it in the hash field', 'Add it to <code>data</code> as <code>"hash"</code>, next to the fields you hashed.'],
+      ])}
+      ${example([
+        [1, 'Recipe: Payout, Net Banking (India)', `<code>SHA256(midcode~amount~currency~bank_name~midsecret)</code>`],
+        [2, 'Your values in that order, joined with ~', `${tk('t1', 'MID123')}${sep}${tk('t1', '100.00')}${sep}${tk('t1', 'INR')}${sep}${tk('t1', 'Example Bank')}${sep}${tk('t3', 'demo_secret_42')}`],
+        [3, 'SHA-256 of that string, as hex', tk('t4', EX_HASH)],
+        [4, 'In your request', `<code>"data": { "midCode": "MID123", "amount": 100.00, "currency": "INR", "paymMethodFields": { "bank_name": "Example Bank", … }, "hash": "${EX_HASH}", … }</code>`],
+      ], `<a class="anat-try" href="${play}/7">Try it →</a>`, true)}
+      <p class="opt-rules">Our responses and callbacks carry a hash built the same way, so you can check them (<a href="#" data-jump="check">see below</a>). Callback hashes join the values with <b>no separator</b>.</p>
+      <h3>Find your recipe</h3>
+      <p>Pick the request type, then your integration, country and method. <b>Try it</b> opens the recipe in the <a href="${play}">Hash playground</a>, where you can type your values and see the hash.</p>
+      ${RP.picker(flow, 'ref', arg)}</section>`;
+    const check = `<section id="check" class="hsec"><h2>Check our hashes</h2>
+      <p>Our responses and callbacks carry a <code>hash</code> too. Rebuild it from the fields you received and your MID secret, and compare before you trust the result. Pick your request in the finder above: the <b>Response hash</b> and <b>Callback hash</b> cards show the recipes.</p>
+      <ul>
+      <li><b>Response hash:</b> check it before you act on the response.</li>
+      <li><b>Callback hash:</b> the values are joined with <b>no separator</b>. Ignore a callback whose hash doesn't match; reply HTTP 200 once you have stored a valid one. See <a href="#/api/callbacks">Callbacks</a>.</li>
+      <li>Hash doesn't match? The <a href="${play}">Hash playground</a>'s detective tells you which of the usual mistakes you made.</li>
+      </ul></section>`;
+    const all = `<section id="all-recipes" class="hsec"><h2>All recipes</h2>${RP.table(flow, RP.model(flow))}</section>`;
+    const aside = `<aside class="api2-code" aria-label="Code examples"><div class="api2-sticky">
+      <div class="snip-head"><span class="snip-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Sign a request</span></div>
+      ${panel('Option A · Signature header', Object.entries(HMAC_CODE), 'side')}
+      ${panel('Option B · Body hash', Object.entries(HASH_CODE), 'side')}
+      <p class="snip-foot">Sign on your server: never put the MID secret in an app or browser.</p></div></aside>`;
+    return twoCol(head, hmac + body + check + all, aside);
   }
 
   /* ---------- Callbacks page ---------- */
   function callbacksPage(flow) {
-    const keys = ['payout', 'payin', 'refund'];
+    const keys = ['payout', 'payin'];
     const cbs = keys.map(key => { const d = page(flow, pageKey[key]), s = sec(d, 'callback-body'); return s ? {key, s, t: tablesOf(s)[0], cb: recipesOf(d).find(r => /callback/i.test(r.group))} : null; }).filter(Boolean);
     const block = ({key, s, t, cb}) => {
       const ul = s.blocks.filter(b => b.kind === 'ul').map(b => `<ul>${b.items.map(i => `<li>${fixLinks(i)}</li>`).join('')}</ul>`).join('');
@@ -388,5 +575,5 @@ $hash = pf_hash([
   /* for other pages (home, corridors): the same terminal panels */
   const requestPanel = (body, title = 'Request') => panel(title, Object.entries(SNIP).map(([t, f]) => [t, f(body)]), 'req');
   const jsonPanel = (title, panes) => panel(title, panes, 'side');
-  return {render, renderOp, init, options: d => exampleOptions(d, d.examples || []), hashesPage, callbacksPage, requestPanel, jsonPanel};
+  return {render, renderOp, init, options: d => exampleOptions(d, d.examples || []), signingPage, callbacksPage, requestPanel, jsonPanel};
 })();

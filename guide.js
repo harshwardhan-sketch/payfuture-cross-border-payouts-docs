@@ -12,6 +12,8 @@ const ramp = nodes => `<div class="ramp">${nodes.map(([t, s], i) => `${i ? '<spa
 const API_URL = 'https://igateway-gwapi.payfuture.net/api/process/request';
 /* India payout facts used on several pages (one place, so they never disagree) */
 const IN_LIMITS = 'INR 500 – 400,000 per payout';
+/* limits are set with the local payment networks and banks we work with, and change: say so wherever limits appear */
+const LIMITS_NOTE = 'Limits are indicative. They are set with the local payment networks and banks we work with and can change at short notice, so the limits on your MID when you send a payout always apply. Check with your Payfuture contact before you rely on a limit.';
 
 NAV.guide = [
   ['Start here', [['welcome', 'Welcome'], ['how-it-works', 'How a payout works'], ['glossary', 'Glossary']]],
@@ -67,7 +69,7 @@ function home() {
     <h2>Jump into the API reference</h2>
     <div class="ql-grid">
       ${ql('#/api/payout', 'Payout', 'Send money to a bank account or wallet')}
-      ${ql('#/api/hashes', 'Hash generation', 'The recipe for every request')}
+      ${ql('#/api/signing', 'Signing & hashes', 'How to sign, and the recipe for every request')}
       ${ql('#/api/callbacks', 'Callbacks', 'What we send to your notificationUrl')}
       ${ql('#/api/op-get-status', 'Get Status', 'Check one transaction')}
       ${ql('#/api/balance', 'Get Balance', 'Your available balance')}
@@ -88,11 +90,11 @@ function home() {
 }
 
 /* ================= START HERE ================= */
-GD.welcome = () => `<div class="pf-banner">${fig('Global-businesses.webp', 'Welcome')}<div class="pf-banner-text"><h1>Welcome to Payfuture Cross-border Payouts</h1><p>Fund once, pay out in India, payout by payout.</p></div></div>
+GD.welcome = () => `<div class="pf-banner">${fig('Global-businesses.webp', 'Welcome')}<div class="pf-banner-text"><h1>Welcome to Payfuture Cross-border Payouts</h1><p>Fund once, pay out locally, payout by payout.</p></div></div>
 <p class="lead">This guide takes you from your first question to your first live payout. Read it in order, or jump to what you need.</p>
 <div class="grid2">
   <a class="tile" href="#/guide/how-it-works"><span class="tag">New here</span><b>How a payout works</b><span>Fund, convert, pay out, get the callback. Press play to watch one.</span></a>
-  <a class="tile" href="#/corridors"><span class="tag">Corridors</span><b>India, and what's next</b><span>Limits, speed and what you send, per corridor.</span></a>
+  <a class="tile" href="#/corridors"><span class="tag">Corridors</span><b>India live, Pakistan in testing</b><span>Limits, speed and what you send, per corridor.</span></a>
   <a class="tile" href="#/guide/quickstart"><span class="tag">Developers</span><b>Quickstart: your first payout</b><span>Check your balance, sign, send, receive the callback, confirm.</span></a>
   <a class="tile" href="#/playground"><span class="tag">Tools</span><b>Hash playground</b><span>Build and debug request signatures in your browser.</span></a>
 </div>
@@ -100,17 +102,17 @@ GD.welcome = () => `<div class="pf-banner">${fig('Global-businesses.webp', 'Welc
 <ul class="tasks">
   <li><a href="#/playground">Generate or debug a request signature</a></li>
   <li><a href="#/guide/how-it-works">Watch a payout travel from request to bank account</a></li>
-  <li><a href="#/corridors">Check India limits and what you send</a></li>
+  <li><a href="#/corridors">Check limits and what you send, per corridor</a></li>
   <li><a href="#/guide/checklist">Tick off the go-live checklist</a></li>
 </ul>`;
 
 function flowSvg() {
   const box = (x, y, t, a, b, main) => `<rect class="${main ? 'main' : 'box'}" x="${x}" y="${y}" width="164" height="72" rx="8"/>
   <text class="t" x="${x + 82}" y="${y + 24}" text-anchor="middle">${t}</text><text class="s" x="${x + 82}" y="${y + 44}" text-anchor="middle">${a}</text><text class="s" x="${x + 82}" y="${y + 60}" text-anchor="middle">${b}</text>`;
-  return `<svg class="flow" viewBox="0 0 760 132" role="img" aria-label="How money moves: you fund, Payfuture converts to INR, you send a payout through the API, the beneficiary is paid">
+  return `<svg class="flow" viewBox="0 0 760 132" role="img" aria-label="How money moves: you fund, Payfuture converts to the local currency, you send a payout through the API, the beneficiary is paid">
   <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrhead"/></marker></defs>
-  <text class="lane" x="22" y="26">INDIA PAYOUTS</text>
-  ${[['You fund', 'USDT, USD or EUR', 'to Payfuture', 0], ['Converted to INR', 'credited to your', 'INR balance', 0], ['PAYOUT via API', 'one call per', 'beneficiary', 1], ['Beneficiary paid', 'over IMPS;', 'callback to you', 0]].map(([t, a, b, m], i) => box(22 + i * 184, 38, t, a, b, m)).join('')}
+  <text class="lane" x="22" y="26">EVERY CORRIDOR</text>
+  ${[['You fund', 'USDT, USD or EUR', 'to Payfuture', 0], ['Converted', 'to the local currency,', 'in your balance', 0], ['PAYOUT via API', 'one call per', 'beneficiary', 1], ['Beneficiary paid', 'over the local rail;', 'callback to you', 0]].map(([t, a, b, m], i) => box(22 + i * 184, 38, t, a, b, m)).join('')}
   ${[0, 1, 2].map(i => `<path class="ln" d="M${186 + i * 184} 74H${206 + i * 184}" marker-end="url(#arr)"/>`).join('')}
   <text class="s" x="22" y="126">Highlighted = where you integrate</text></svg>`;
 }
@@ -119,10 +121,15 @@ GD['how-it-works'] = () => `<h1>How a payout works</h1>
 <p class="lead">Payouts are prefunded and asynchronous. Money lands in your Payfuture balance first. Each payout request is <b>accepted</b> in milliseconds, and the money <b>arrives</b> minutes later.</p>
 <h2>How money moves</h2>
 ${flowSvg()}
+${table(['Corridor', 'Balance', 'Paid to', 'Rail', 'Proof of payment'], [
+  ['🇮🇳 India · <span class="st-live">Live</span>', 'INR', 'Indian bank accounts', 'IMPS, real time, 24x7', 'UTR (bank reference) in the callback'],
+  ['🇵🇰 Pakistan · <span class="st-soon">API ready, testing</span>', 'PKR', 'Bank accounts (IBAN), Easypaisa and JazzCash wallets', 'Bank transfer or wallet', 'Confirmed when Pakistan goes live on your MID'],
+])}
 <h2>Watch one</h2>
-<p>Pick an outcome, then press play.</p>
+<p>Pick a corridor and an outcome, then press play.</p>
 <div class="sim" id="sim">
   <div class="sim-controls">
+    <div class="seg" data-k="corridor"><button class="on" data-v="in">🇮🇳 India</button><button data-v="pk">🇵🇰 Pakistan</button></div>
     <div class="seg" data-k="outcome"><button class="on" data-v="ok">Paid</button><button data-v="fail">Declined</button></div>
     <button class="btn btn-yellow" id="simRun">▶ Send a payout</button>
   </div>
@@ -134,12 +141,16 @@ ${table(['Still moving', 'Final: paid', 'Final: not paid'], [
 ])}
 ${callout('<p><b>Golden rule:</b> never mark a payout as paid on the first response. Wait for the callback, and confirm it with GetStatus before you act on it.</p>', 'ok')}
 ${next('#/guide/journey', 'Next: the integration journey')}`;
+const SIM_PK = {
+  ok: [['You', 'POST PAYOUT to a Pakistani bank account (IBAN) or an Easypaisa / JazzCash wallet, signed with your MID secret', 'req'], ['Payfuture', 'HTTP 200 · status PENDING · transaction_id INV…', 'res'], ['Payfuture', 'Debits your PKR balance and sends it to the bank or wallet · IN-PROCESS', 'mid'], ['Bank / wallet', 'Credits the beneficiary', 'bank'], ['Payfuture', 'Callback to your notificationUrl · APPROVED', 'cb'], ['You', 'GetStatus confirms APPROVED → mark as paid 🎉', 'done']],
+  fail: [['You', 'POST PAYOUT to a Pakistani bank account or wallet', 'req'], ['Payfuture', 'HTTP 200 · status PENDING', 'res'], ['Payfuture', 'Sends it to the bank or wallet · IN-PROCESS', 'mid'], ['Bank / wallet', 'Rejects it, for example an unknown wallet number', 'bank'], ['Payfuture', 'Callback · DECLINED · errorcode set', 'cb'], ['You', 'GetStatus confirms DECLINED → the money stays in your balance', 'fail']],
+};
 const SIM = {
   ok: [['You', 'POST PAYOUT to an Indian bank account, signed with your MID secret', 'req'], ['Payfuture', 'HTTP 200 · status PENDING · transaction_id INV78I…', 'res'], ['Payfuture', 'Debits your INR balance and sends it over IMPS · IN-PROCESS', 'mid'], ['Bank', 'Credits the beneficiary · UTR issued', 'bank'], ['Payfuture', 'Callback to your notificationUrl · APPROVED + utrnumber', 'cb'], ['You', 'GetStatus confirms APPROVED → mark as paid 🎉', 'done']],
   fail: [['You', 'POST PAYOUT to an Indian bank account', 'req'], ['Payfuture', 'HTTP 200 · status PENDING', 'res'], ['Payfuture', 'Sends it over IMPS · IN-PROCESS', 'mid'], ['Bank', 'Rejects it: rejected by the beneficiary bank', 'bank'], ['Payfuture', 'Callback · DECLINED · errorcode set', 'cb'], ['You', 'GetStatus confirms DECLINED → the money stays in your balance', 'fail']],
 };
 INIT['how-it-works'] = () => {
-  const sim = document.getElementById('sim'), st = {outcome: 'ok'};
+  const sim = document.getElementById('sim'), st = {outcome: 'ok', corridor: 'in'};
   let timers = [];
   sim.querySelectorAll('.seg').forEach(seg => seg.onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -148,27 +159,40 @@ INIT['how-it-works'] = () => {
   document.getElementById('simRun').onclick = () => {
     timers.forEach(clearTimeout); timers = [];
     const track = document.getElementById('simTrack'); track.innerHTML = '';
-    SIM[st.outcome].forEach(([who, what, kind], i) => timers.push(setTimeout(() => {
+    (st.corridor === 'pk' ? SIM_PK : SIM)[st.outcome].forEach(([who, what, kind], i) => timers.push(setTimeout(() => {
       track.insertAdjacentHTML('beforeend', `<li class="ev ${kind}"><span class="who">${who}</span><span>${what}</span></li>`);
     }, 650 * i)));
   };
 };
 
-GD.glossary = () => `<h1>Glossary</h1>
-<p class="lead">The words you'll meet in this guide, in plain English.</p>
-<dl class="glossary">${[
+GD.glossary = () => {
+  const dl = rows => `<dl class="glossary">${rows.map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join('')}</dl>`;
+  return `<h1>Glossary</h1>
+<p class="lead">The words you'll meet in this guide, in plain English. Terms that apply to one corridor only are listed under it.</p>
+<h2>Every corridor</h2>
+${dl([
   ['Callback', 'The POST Payfuture sends to your <code>notificationUrl</code> when a payout is final.'],
   ['Cut-off', 'The time after which funding moves to the next window. Payfuture confirms yours at onboarding.'],
   ['HMAC', 'A signature over the raw request body made with your secret, sent in <code>X-Callback-Signature</code>.'],
   ['Idempotency', 'Sending the same request twice has the effect of sending it once. Use a unique <code>merchantRefNo</code> per payout.'],
-  ['IFSC', 'Indian Financial System Code: identifies an Indian bank branch.'],
-  ['IMPS', 'Immediate Payment Service: India\'s real-time, 24x7 bank transfer rail.'],
   ['MID / MID secret', 'Your merchant ID and the secret used to sign requests and verify callbacks.'],
-  ['Off-ramp', 'Converting USDT or fiat into the INR you pay out in.'],
+  ['Off-ramp', 'Converting USDT or fiat into the local currency you pay out in (INR, PKR).'],
   ['Prefunding', 'Putting money in your Payfuture balance before you send payouts.'],
   ['USDT', 'Tether, a USD-pegged stablecoin.'],
-  ['UTR', 'Unique Transaction Reference: the Indian bank\'s proof that a payout was made.'],
-].map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join('')}</dl>`;
+])}
+<h2>🇮🇳 India</h2>
+${dl([
+  ['IFSC', 'Indian Financial System Code: identifies an Indian bank branch. Sent as <code>bank_ifsc</code>.'],
+  ['IMPS', 'Immediate Payment Service: India\'s real-time, 24x7 bank transfer rail.'],
+  ['UTR', 'Unique Transaction Reference: the Indian bank\'s proof that a payout was made. It comes back in the callback.'],
+])}
+<h2>🇵🇰 Pakistan <span class="st-soon">API ready, testing</span></h2>
+${dl([
+  ['IBAN', 'The beneficiary\'s bank account number: 24 characters, always starting with <code>PK</code>. Sent as <code>account_number</code>.'],
+  ['CNIC', 'The beneficiary\'s national identity card number: 13 digits. Sent as <code>document_id</code> on wallet payouts.'],
+  ['Easypaisa / JazzCash', 'Mobile wallets. The wallet number is 11 digits starting with <code>03</code>, without +92.'],
+])}`;
+};
 
 /* ================= GET STARTED ================= */
 GD.journey = () => `<h1>Integration journey</h1>
@@ -183,10 +207,10 @@ GD.journey = () => `<h1>Integration journey</h1>
 ${next('#/guide/quickstart', 'Next: send your first payout')}`;
 
 GD.quickstart = () => `<h1>Quickstart: your first payout</h1>
-<p class="lead">Five steps, about an hour. You need your MID, MID secret, a whitelisted server and a funded balance.</p>
+<p class="lead">Five steps, about an hour. You need your MID, MID secret, a whitelisted server and a funded balance. Pick your corridor: only the signing recipe and the request body differ.</p>
 ${callout(`<p>All calls go to <code>POST ${API_URL}</code> with headers <code>Content-Type: application/json</code> and <code>api-version: 2.0</code>.</p>`)}
-<ol class="steps big">
-<li><b>Check your balance</b>Hash <code>SHA256(midcode~midsecret)</code>, then:
+${tabs([
+  ['🇮🇳 India · live', `<ol class="steps big"><li><b>Check your balance</b>Hash <code>SHA256(midcode~midsecret)</code>, then:
 ${code(`{ "requestType": "GetBalance", "data": { "midcode": "MID123", "hash": "<hash>" } }`)}</li>
 <li><b>Sign the payout</b>For India Net Banking the formula is <code>SHA256(midcode~amount~currency~bank_name~midsecret)</code>. Amount with two decimals, secret in lower case.
 ${tabs([
@@ -245,7 +269,67 @@ def callback():
 <li><b>Confirm with GetStatus</b>The callback hash doesn't cover <code>status</code>, so confirm before you act:
 ${code(`{ "requestType": "GetStatus", "data": { "midcode": "MID123", "transaction_id": "INV78I1757502089824", "transaction_type": "payout", "hash": "<SHA256(midcode~transaction_id~transaction_type~midsecret)>" } }`)}
 <p><code>APPROVED</code>? Mark it paid and store the <code>utrnumber</code>. 🎉</p></li>
-</ol>
+</ol>`],
+  ['🇵🇰 Pakistan · API ready, testing', `${callout('<p><b>Build now, go live after testing.</b> The Pakistan API is ready to integrate against; Payfuture enables it on your MID once testing is complete.</p>', 'warn')}<ol class="steps big"><li><b>Check your balance</b>Hash <code>SHA256(midcode~midsecret)</code>, then:
+${code(`{ "requestType": "GetBalance", "data": { "midcode": "MID123", "hash": "<hash>" } }`)}</li>
+<li><b>Sign the payout</b>For a Pakistan bank transfer (IBAN) the formula is <code>SHA256(midcode~account_name~account_number~bank_code~amount~currency~midsecret)</code>. Amount with two decimals, secret in lower case. For Easypaisa or JazzCash wallets it is <code>SHA256(midcode~merchantrefno~wallet_number~document_id~amount~currency~midsecret)</code>.
+${tabs([
+  ['Node.js', code(`const crypto = require('crypto');
+
+const parts = ['MID123', 'Ali Khan', 'PK36SCBL0000001123456702', 'PK035', '25000.00', 'PKR', process.env.MID_SECRET.toLowerCase()];
+const hash = crypto.createHash('sha256').update(parts.join('~')).digest('hex');`, 'javascript')],
+  ['Python', code(`import hashlib, os
+
+parts = ["MID123", "Ali Khan", "PK36SCBL0000001123456702", "PK035", "25000.00", "PKR", os.environ["MID_SECRET"].lower()]
+hash_ = hashlib.sha256("~".join(parts).encode()).hexdigest()`, 'python')],
+  ['PHP', code(`<?php
+$parts = ['MID123', 'Ali Khan', 'PK36SCBL0000001123456702', 'PK035', '25000.00', 'PKR', strtolower(getenv('MID_SECRET'))];
+$hash = hash('sha256', implode('~', $parts));`, 'php')],
+])}
+<p>Prefer HMAC? Sign the exact body bytes and send <code>X-Callback-Signature: sha256=&lt;hex&gt;</code> instead. <a href="#/playground">Try both in the hash playground →</a></p></li>
+<li><b>Send the payout</b>Pakistan payouts don't need <code>userInfo</code>. For a bank transfer send the beneficiary's IBAN, name and bank code:
+${code(`{
+  "requestType": "PAYOUT",
+  "data": {
+    "midCode": "MID123",
+    "integrationType": "S",
+    "amount": 25000,
+    "hash": "<hash>",
+    "currency": "PKR",
+    "country": "PK",
+    "merchantUrl": { "notificationUrl": "https://merchant.example/payfuture/callback" },
+    "merchantRefNo": "PO-000124",
+    "paymentMethod": "BT",
+    "paymMethodFields": { "account_number": "PK36SCBL0000001123456702", "account_name": "Ali Khan", "bank_code": "PK035" }
+  }
+}`)}
+<p>For a wallet, send <code>"paymentMethod": "EP"</code> (Easypaisa) or <code>"JC"</code> (JazzCash) with <code>paymMethodFields</code> <code>wallet_number</code> (11 digits starting 03) and <code>document_id</code> (the CNIC, 13 digits). Field rules and both examples: <a href="#/corridors/pk">Pakistan corridor</a>.</p>
+<p>You get back <code>success: true</code>, a <code>transaction_id</code> and status <code>PENDING</code>. Save both IDs.</p></li>
+<li><b>Receive the callback</b>Payfuture posts a form-encoded callback to your <code>notificationUrl</code>. Verify it, reply 200 fast.
+${tabs([
+  ['Node.js (Express)', code(`app.post('/payfuture/callback', express.urlencoded({ extended: false }), (req, res) => {
+  const { key, payoutid, amount, hash } = req.body;
+  const expected = crypto.createHash('sha256')
+    .update(key + payoutid + amount + process.env.MID_SECRET.toLowerCase())
+    .digest('hex');
+  if (expected !== hash) return res.sendStatus(400);
+  queueStatusCheck(payoutid);   // confirm with GetStatus before marking paid
+  res.sendStatus(200);
+});`, 'javascript')],
+  ['Python (Flask)', code(`@app.post("/payfuture/callback")
+def callback():
+    f = request.form
+    raw = f["key"] + f["payoutid"] + f["amount"] + os.environ["MID_SECRET"].lower()
+    if hashlib.sha256(raw.encode()).hexdigest() != f["hash"]:
+        return "", 400
+    queue_status_check(f["payoutid"])  # confirm with GetStatus before marking paid
+    return "", 200`, 'python')],
+])}</li>
+<li><b>Confirm with GetStatus</b>The callback hash doesn't cover <code>status</code>, so confirm before you act:
+${code(`{ "requestType": "GetStatus", "data": { "midcode": "MID123", "transaction_id": "INV78I1757502089824", "transaction_type": "payout", "hash": "<SHA256(midcode~transaction_id~transaction_type~midsecret)>" } }`)}
+<p><code>APPROVED</code>? Mark it paid. 🎉</p></li>
+</ol>`],
+])}
 ${next('#/api/payout', 'Full payout reference')}`;
 
 /* ================= BUILD ================= */
@@ -253,11 +337,12 @@ GD.funding = () => `<h1>Funding & balance</h1>
 <p class="lead">Payouts are prefunded: money lands in your Payfuture balance first, then each payout draws from it.</p>
 ${steps([
   ['Fund in USDT, USD or EUR', 'Use only the wallet address or bank details Payfuture Finance gives you. They are never published on this site, and you should never send to details you found anywhere else.'],
-  ['Payfuture converts it to INR', 'Your INR balance goes up once the funds are received and converted.'],
+  ['Payfuture converts it to the local currency', 'Your balance in that currency (INR for India; PKR for Pakistan once it is live on your MID) goes up once the funds are received and converted.'],
   ['Check your balance', 'Call <code>GetBalance</code> before you send payouts. A payout larger than your balance is declined with <code>11081</code> (insufficient balance).'],
-  ['Pay out', 'Each payout is debited from your INR balance. A declined payout leaves the money in your balance.'],
+  ['Pay out', 'Each payout is debited from the balance in its currency. A declined payout leaves the money in your balance.'],
 ])}
 ${callout('<p><b>Funding window and FX rate:</b> Payfuture Finance confirms your funding cut-off and how your conversion rate is set when you onboard.</p>')}
+${callout(`<p><b>Limits can change.</b> ${LIMITS_NOTE}</p>`, 'warn')}
 <p>API details: <a href="#/api/balance">GetBalance</a> and <a href="#/api/op-get-transaction-list">GetTransactionList</a>.</p>`;
 
 /* ================= GO LIVE ================= */
@@ -277,7 +362,8 @@ const CHECK = [
   ['Credentials', 'MID secret lives in a secrets manager, never in code or logs'],
   ['Credentials', 'Server IPs whitelisted with Payfuture'],
   ['Payouts', 'A unique merchantRefNo on every payout'],
-  ['Payouts', 'userInfo sent on every India payout'],
+  ['Payouts', 'India: userInfo (beneficiary name, phone and email) sent on every payout'],
+  ['Payouts', 'Pakistan wallets: the beneficiary\'s CNIC sent as document_id'],
   ['Payouts', 'Balance checked before sending'],
   ['Payouts', 'Payouts marked paid only on a final status'],
   ['Signing & callbacks', 'Request signatures checked in the hash playground'],

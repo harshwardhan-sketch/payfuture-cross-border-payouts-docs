@@ -4,8 +4,8 @@
 (() => {
   const RECIPES = D[F].recipes
     .map((r, i) => ({i, label: r.label, formula: r.formula, parts: r.label.split(' · ')}))
-    .filter(r => /^SHA256\(/i.test(r.formula) && !/serializ/i.test(r.formula));
-  const MAIN = ['Payout', 'Payin', 'Refund', 'Get Balance', 'Get Status'];
+    .filter(r => /^SHA256\(/i.test(r.formula) && !/serializ/i.test(r.formula) && !HIDE_RECIPE(r));
+  const MAIN = ['Payout', 'Payin', 'Get Balance', 'Get Status'];
   const groupOf = r => MAIN.includes(r.parts[0]) ? r.parts[0] : 'More';
   const GROUPS = [...MAIN, 'More'].filter(g => RECIPES.some(r => groupOf(r) === g));
   const recipeName = r => groupOf(r) === 'More' ? r.parts.join(' · ') : r.parts.slice(1).join(' · ').replace(/ Hash\b/, '');
@@ -47,11 +47,15 @@ ${tabs([
 ])}
 </div>
 <h2>The rules, once more</h2>
-<ul><li>Fields in exactly the recipe order, joined with <code>~</code>. Callback hashes join them with <b>no separator</b>.</li><li>Amounts with two decimals: <code>100.00</code>.</li><li>The MID secret in lower case.</li><li>All recipes with a calculator: <a href="#/api/signing">Signing &amp; hash calculator</a>. Still stuck? Send your integration contact the string you hashed, with the secret removed.</li></ul>`;
+<ul><li>Fields in exactly the recipe order, joined with <code>~</code>. Callback hashes join them with <b>no separator</b>.</li><li>Amounts with two decimals: <code>100.00</code>.</li><li>The MID secret in lower case.</li><li>All recipes: <a href="#/api/signing">Signing &amp; hashes</a>. Still stuck? Send your integration contact the string you hashed, with the secret removed.</li></ul>`;
 
   function init() {
     const $ = id => document.getElementById(id);
     let group = GROUPS[0], rec = RECIPES.find(r => groupOf(r) === group);
+    /* #/playground/<recipe number> opens that recipe; #/playground/hmac opens the signature header tab */
+    const arg = (location.hash.split('/')[2] || '').trim();
+    const pre = /^\d+$/.test(arg) && RECIPES.find(r => r.i === +arg);
+    if (pre) { group = groupOf(pre); rec = pre; $('pgGroups').querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.g === group)); }
     const vals = {...VAL}, box = $('pgFields');
     const recipe = () => parseRecipe(rec.formula);
     const defaultFor = t => {
@@ -151,6 +155,7 @@ ${tabs([
     $('detIn').onkeydown = e => { if (e.key === 'Enter') investigate(); };
 
     drawRecipes(); draw();
+    if (arg === 'hmac') [...document.querySelectorAll('.pg .tabs button')].find(b => /signature/i.test(b.textContent))?.click();
   }
 
   SOLO.playground = ['Hash playground', page];

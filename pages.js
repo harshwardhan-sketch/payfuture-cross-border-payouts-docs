@@ -7,22 +7,21 @@ const OPS = otherOps(F).map(s => ['op-' + s.id, s.title]);
 NAV.api = [
   ['Get started', [['start', 'Overview'], ['onboarding', 'Before you start']]],
   /* signing, hashes and callbacks come before the requests: a request needs its hash and notificationUrl */
-  ['Before your first request', [['signing', 'Signing & hash calculator'], ['hashes', 'Hash generation'], ['callbacks', 'Callbacks']]],
-  ['Requests', [['payout', 'Payout'], ['payin', 'Payin'], ['refund', 'Refund']]],
+  ['Before your first request', [['signing', 'Signing & hashes'], ['callbacks', 'Callbacks']]],
+  ['Requests', [['payout', 'Payout'], ['payin', 'Payin']]],
   ['Utilities', [['balance', 'Get Balance'], ...OPS]],
   ['Reference', [['errors', 'Error codes']]],
 ];
-/* Every operation (Payout, Payin, Refund, Get Balance, utilities) uses the parameters + code panel layout (apiref2.js).
+/* Every operation (Payout, Payin, Get Balance, utilities) uses the parameters + code panel layout (apiref2.js).
    Status per country, for the badges in the picker: Confluence PMA 1979875329 (India payouts live, Pakistan testing). */
 const API_STATUS = (key, country) => key === 'payout' ? ({India: 'live', Pakistan: 'soon'}[country] || 'doc') : 'doc';
-Object.keys(API_PAGES).forEach(k => { I[k] = arg => API2.render(F, k, arg ? decodeURIComponent(arg) : '', API_STATUS); INIT[k] = arg => API2.init(k, arg); });
-I.hashes = () => API2.hashesPage(F);
+Object.keys(API_PAGES).filter(k => k !== 'refund').forEach(k => { I[k] = arg => API2.render(F, k, arg ? dec(arg) : '', API_STATUS); INIT[k] = arg => API2.init(k, arg); });
 I.callbacks = () => API2.callbacksPage(F);
-INIT.hashes = arg => { const el = arg && document.getElementById('h-' + arg); if (el) el.scrollIntoView({block: 'start'}); };
-OPS.forEach(([id]) => { I[id] = arg => API2.renderOp(F, id.slice(3), arg ? decodeURIComponent(arg) : ''); INIT[id] = arg => API2.init(id, arg); });
-I.signing = () => P.signing(F);
-INIT.signing = arg => initCalc(F, arg);
-I.errors = arg => errorsPage(F, arg ? decodeURIComponent(arg) : '');
+OPS.forEach(([id]) => { I[id] = arg => API2.renderOp(F, id.slice(3), arg ? dec(arg) : ''); INIT[id] = arg => API2.init(id, arg); });
+/* one page for signing: how to sign, every recipe (finder), how to check our hashes; Try it opens the Hash playground */
+I.signing = arg => API2.signingPage(F, arg ? dec(arg) : '');
+INIT.signing = arg => { const el = arg && document.getElementById(arg === 'hmac' ? 'hmac' : 'body-hash'); if (el) el.scrollIntoView({block: 'start'}); };
+I.errors = arg => errorsPage(F, arg ? dec(arg) : '');
 INIT.errors = () => filterErrors();
 document.addEventListener('input', e => { if (e.target.id === 'errSearch') filterErrors(); });
 
@@ -37,18 +36,16 @@ ${callout('<p><b>What is live for you.</b> This reference mirrors the full live 
 <h2>Build in this order</h2>
 <div class="seqs">
   ${step(1, '#/api/onboarding', 'Before you start', 'MID and secret, IP whitelisting, callback URL')}
-  ${step(2, '#/api/signing', 'Signing', 'Body hash or signature header')}
-  ${step(3, '#/api/hashes', 'Hash generation', 'The recipe for each request')}
-  ${step(4, '#/api/callbacks', 'Callbacks', 'What we send to your notificationUrl')}
-  ${step(5, '#/api/payout', 'Payout', 'Your first request')}
-  ${step(6, '#/api/op-get-status', 'Get Status and Get Balance', 'Check results and funds')}
+  ${step(2, '#/api/signing', 'Signing & hashes', 'Signature header or body hash, and the recipe for each request')}
+  ${step(3, '#/api/callbacks', 'Callbacks', 'What we send to your notificationUrl')}
+  ${step(4, '#/api/payout', 'Payout', 'Your first request')}
+  ${step(5, '#/api/op-get-status', 'Get Status and Get Balance', 'Check results and funds')}
 </div>
 <h2>Operations</h2>
 <p>Every call is <code>POST</code> to the same URL. The <code>requestType</code> picks the operation:</p>
 <div class="op-cards">
   ${op('#/api/payout', 'PAYOUT', 'Payout', 'Send money to a bank account or wallet.')}
   ${op('#/api/payin', 'PAYIN', 'Payin', 'Collect a payment.')}
-  ${op('#/api/refund', 'REFUND', 'Refund', 'Refund an approved pay-in.')}
   ${op('#/api/balance', 'GetBalance', 'Get Balance', 'Your available balance.')}
   ${op('#/api/op-get-status', 'GetStatus', 'Get Status', 'The status of one transaction.')}
   ${op('#/api/op-get-transaction-list', 'GetTransactionList', 'Get Transaction List', 'Your transactions, for reconciliation.')}

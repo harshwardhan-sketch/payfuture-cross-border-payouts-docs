@@ -18,7 +18,8 @@
   const page = id => {
     const cur = id === 'pk' ? 'pk' : 'in';
     return `<h1>Corridors</h1>
-<p class="lead">Where you can pay out, how much, how fast and what you send. Your contracted limits may differ; Payfuture confirms them at onboarding.</p>
+<p class="lead">Where you can pay out, how much, how fast and what you send.</p>
+${callout(`<p><b>Limits can change.</b> ${LIMITS_NOTE}</p>`, 'warn')}
 ${tabs(cur)}
 <div class="cor-2">
   <div class="cor-main">${cur === 'pk' ? pakistan() : india()}</div>
@@ -77,7 +78,7 @@ ${rest()}`;
     ['Fund with', 'USDT, USD or EUR'],
     ['Pay to', 'Individuals and businesses (<code>payout_type</code> Individual or Corporate)'],
     ['Rail', 'IMPS: real time, 24x7'],
-    ['Per payout', IN_LIMITS],
+    ['Per payout', IN_LIMITS + '<small class="lim-note">Indicative: can change at short notice</small>'],
     ['paymentMethod', '<code>"NB"</code>'],
     ['You send', 'Account number, account name, bank name, IFSC, payout type, and the beneficiary\'s name, phone and email'],
     ['Business payouts', 'Invoice and GST number required'],
@@ -92,7 +93,7 @@ ${rest()}`;
     ['Amount', 'Whole number only: no decimals for Pakistan (otherwise error <code>11440</code>)'],
     ['Result', 'Callback to your <code>notificationUrl</code>, and <code>GetStatus</code> at any time'],
     ['Limits, funding and speed', 'Confirmed by Payfuture when Pakistan goes live on your MID'],
-  ], [['#/api/payout/seamless-bank-transfer-pakistan', 'Payout API'], ['#/api/signing', 'Signing & hash calculator'], ['#/playground', 'Hash playground'], ['#/api/errors', 'Error codes']]);
+  ], [['#/api/payout/seamless-bank-transfer-pakistan', 'Payout API'], ['#/api/signing', 'Signing & hashes'], ['#/playground', 'Hash playground'], ['#/api/errors', 'Error codes']]);
 
   const rest = () => `<h2>Everything else in the API reference</h2>
 <p>The <a href="#/api/start">API reference</a> mirrors the full live API docs, so it also documents methods that are not live for Cross-border Payouts. Build only what is live for your MID, and ask your Payfuture contact before you build anything else.</p>
@@ -101,7 +102,7 @@ ${table(['What', 'Where', 'Status'], [
   ['Payouts · Bank Transfer, Easypaisa, JazzCash', '🇵🇰 Pakistan', '<span class="st-soon">API ready · testing in progress</span> <a href="#/corridors/pk">Details</a>'],
   ['Payouts · Bank Transfer', '🇳🇬 Nigeria · 🇵🇭 Philippines', '<span class="st-doc">In the API docs; ask your contact</span>'],
   ['Payouts · Mobile Wallet, Bank Deposit, Cash', '🇪🇬 Egypt', '<span class="st-doc">In the API docs; ask your contact</span>'],
-  ['Pay-ins, refunds and quotes', 'Several markets', '<span class="st-doc">In the API docs; ask your contact</span>'],
+  ['Pay-ins and prefunding quotes', 'Several markets', '<span class="st-doc">In the API docs; ask your contact</span>'],
 ])}`;
   SOLO.corridors = ['Corridors', page];
 })();

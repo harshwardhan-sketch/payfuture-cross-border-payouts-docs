@@ -6,10 +6,20 @@
    Build-free: open index.html directly. Visible text never uses internal names (Enterprise, IGE, CBS, Legacy).
    Scope (Nov 2026): India payouts live; Pakistan API ready, testing in progress (Confluence PMA 1979875329). */
 
+/* clickjacking: these docs only run in their own window or inside a page of this site */
+(() => { let ok = window.top === window.self; try { ok = ok || window.top.location.origin === location.origin; } catch (_) { ok = false; }
+  if (!ok) { document.documentElement.style.display = 'none'; try { window.top.location = location.href; } catch (_) { /* sandboxed */ } } })();
+/* addresses can hold a malformed %-sequence: decode without ever throwing */
+/* not offered on this site: refunds are handled manually */
+const HIDE_RECIPE = r => /^Refund ·/.test(r.label);
+const dec = s => { try { return decodeURIComponent(s); } catch (_) { return String(s); } };
+
 /* ---------- helpers ---------- */
-const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+/* element text only: quotes stay as they are, so the JSON colouring below can find them */
+const escText = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 function hl(src, lang) {
-  let h = esc(src);
+  let h = escText(src);
   if (lang === 'json') {
     h = h.replace(/("(?:[^"\\]|\\.)*")(\s*:)?/g, (m, str, colon) => colon ? `<span class="k">${str}</span>${colon}` : `<span class="s">${str}</span>`)
          .replace(/\b(true|false|null|-?\d+(?:\.\d+)?)\b(?![^<]*>)/g, '<span class="n">$1</span>');
@@ -45,7 +55,7 @@ const SOLO = {};
 /* per-page hooks for the interactive pages: INIT[pageId](arg) runs after the page is drawn */
 const INIT = {};
 /* pages that moved or were removed: old links keep working */
-const MOVED = {'guide/playground': '#/playground', 'guide/corridors': '#/corridors', 'api/limits': '#/corridors', 'guide/payouts': '#/corridors',
+const MOVED = {'api/hashes': '#/api/signing', 'api/refund': '#/guide/support', 'guide/playground': '#/playground', 'guide/corridors': '#/corridors', 'api/limits': '#/corridors', 'guide/payouts': '#/corridors',
   'guide/collections': '#/corridors', 'guide/enterprise': '#/guide/welcome', 'guide/find-your-product': '#/corridors', 'api/funding': '#/guide/funding',
   'api/testing': '#/guide/go-live', 'api/faq': '#/guide/faq', 'api/status': '#/api/op-get-status',
   'api/reconciliation': '#/api/balance'};
@@ -62,7 +72,7 @@ function render() {
   const [, sec, id, arg] = (location.hash || '#/').split('/');
   document.body.classList.remove('menu');
   if (sec === 'about') { location.replace('#/'); return; }
-  if (MOVED[sec + '/' + id]) { location.replace(MOVED[sec + '/' + id]); return; }
+  if (MOVED[sec + '/' + id]) { location.replace(MOVED[sec + '/' + id] + (arg ? '/' + arg : '')); return; }
   if (SOLO[sec]) {
     app.innerHTML = `<div class="layout solo" data-sec="${sec}"><nav class="side">${mobileTabs()}</nav><main>${SOLO[sec][1](id)}</main></div>`;
     setTab(sec); document.title = `${SOLO[sec][0]} · Payfuture Cross-border Payouts`; window.scrollTo(0, 0); afterRender(sec); return;
@@ -104,7 +114,7 @@ function afterRender(pageId, arg) {
   m.classList.remove('enter'); void m.offsetWidth; m.classList.add('enter');
   /* wrap tables so they scroll sideways on small screens */
   document.querySelectorAll('#app table').forEach(t => { if (!t.parentElement.classList.contains('tw')) { const w = document.createElement('div'); w.className = 'tw'; t.replaceWith(w); w.appendChild(t); } });
-  if (INIT[pageId]) INIT[pageId](arg ? decodeURIComponent(arg) : '');
+  if (INIT[pageId]) INIT[pageId](arg ? dec(arg) : '');
   document.dispatchEvent(new CustomEvent('pf:rendered', {detail: {pageId, arg}}));
 }
 
@@ -218,5 +228,5 @@ function hmacSha256(key, msg) {
 /* page routes the error fixes link to (error-fixes.js) */
 window.ERR_LINKS = {hash: '#/api/signing', signing: '#/api/signing', playground: '#/playground', callbacks: '#/api/payout',
   support: '#/guide/support', status: '#/api/op-get-status', balance: '#/api/balance', funding: '#/guide/funding',
-  payin: '#/api/payin', payout: '#/api/payout', refund: '#/api/refund', txlist: '#/api/op-get-transaction-list',
+  payin: '#/api/payin', payout: '#/api/payout', refund: '#/guide/support', txlist: '#/api/op-get-transaction-list',
   quote: '#/api/op-payout-prefunding-quote'};

@@ -32,7 +32,7 @@ const ERROR_FIX = (() => {
     '11034': () => `The customer's UPI ID has reached its daily limit. Ask them to pay with another UPI ID.`,
     '11035': () => `Too many payments from this UPI ID are still open. Ask the customer to finish or wait (about 75 minutes), or use another UPI ID.`,
     '11036': () => `A payment from this UPI ID is still open. Ask the customer to finish or wait (about 75 minutes), or use another UPI ID.`,
-    '11051': () => `${c('requestType')} is not a known value. Use one of the documented values exactly, for example ${c('PAYIN')}, ${c('PAYOUT')}, ${c('REFUND')}, ${c('GetBalance')}, ${c('GetStatus')}.`,
+    '11051': () => `${c('requestType')} is not a known value. Use one of the documented values exactly, for example ${c('PAYIN')}, ${c('PAYOUT')}, ${c('GetBalance')}, ${c('GetStatus')}.`,
     '11062': () => `The customer left the payment page. Nothing to fix; they can start a new payment (with a new ${c('merchantRefNo')}).`,
     '11063': () => `We could not read the request. Send valid JSON with ${c('Content-Type: application/json')} and the ${c('api-version: 2.0')} header, with ${c('requestType')} and ${c('data')} at the top level (camelCase keys).`,
     '11066': () => `Use a documented transaction type value; check the spelling and case against the request's field table.`,
